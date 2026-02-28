@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦋 Kenya Butterfly Urban Adaptation Study | Interactive Report</title>
+    
+    <!-- Fonts and Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet for interactive maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Chart.js for interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- html2pdf for PDF download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- AOS for scroll animations -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            border-radius: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header::before {
+            content: "🦋";
+            position: absolute;
+            right: 20px;
+            bottom: -20px;
+            font-size: 200px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+        
+        .header h1 {
+            font-size: 3.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            max-width: 600px;
+        }
+        
+        .header-date {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #f7fafc;
+            color: #2d3748;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .control-btn i {
+            font-size: 1.1em;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .stat-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2d3748;
+            line-height: 1.2;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-trend {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #48bb78;
+        }
+        
+        /* Navigation */
+        .nav {
+            background: white;
+            border-radius: 60px;
+            padding: 15px 25px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.95);
+        }
+        
+        .nav a {
+            padding: 10px 20px;
+            text-decoration: none;
+            color: #2d3748;
+            font-weight: 500;
+            border-radius: 30px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav a:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .nav a i {
+            font-size: 1.1em;
+        }
+        
+        /* Abstract */
+        .abstract-card {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .abstract-card::after {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            border-radius: 50%;
+        }
+        
+        .abstract-card h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 2em;
+        }
+        
+        .abstract-card h2 i {
+            color: #667eea;
+        }
+        
+        .abstract-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .keyword-tag {
+            background: #f7fafc;
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            color: #667eea;
+            border: 1px solid #667eea30;
+        }
+        
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .section-header h2 {
+            font-size: 2.2em;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .section-header i {
+            font-size: 2em;
+            color: #667eea;
+            background: white;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+        }
+        
+        /* Figure Gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .figure-card {
+            background: white;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .figure-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(102, 126, 234, 0.3);
+        }
+        
+        .figure-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            transition: all 0.3s;
+        }
+        
+        .figure-card:hover .figure-image {
+            transform: scale(1.05);
+        }
+        
+        .figure-caption {
+            padding: 20px;
+        }
+        
+        .figure-caption h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        
+        .figure-caption p {
+            color: #718096;
+            font-size: 0.95em;
+        }
+        
+        .figure-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .figure-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 50px;
+            background: #f7fafc;
+            color: #2d3748;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+        
+        .figure-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* Interactive Map */
+        .map-container {
+            background: white;
+            border-radius: 30px;
+            padding: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        #interactive-map {
+            height: 500px;
+            border-radius: 20px;
+            z-index: 1;
+        }
+        
+        .map-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .map-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 50px;
+            background: #f7fafc;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .map-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 30px;
+            padding: 20px;
+            margin-bottom: 40px;
+            overflow-x: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            font-weight: 500;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        tr:hover {
+            background: #f7fafc;
+        }
+        
+        /* Key Findings */
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .finding-card {
+            background: white;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .finding-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .finding-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(102, 126, 234, 0.3);
+        }
+        
+        .finding-icon {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        
+        .finding-card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .finding-card p {
+            color: #718096;
+        }
+        
+        .finding-stats {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .finding-stat {
+            text-align: center;
+        }
+        
+        .finding-stat-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .finding-stat-label {
+            font-size: 0.8em;
+            color: #718096;
+        }
+        
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .lightbox.active {
+            display: flex;
+        }
+        
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+        }
+        
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 3em;
+            cursor: pointer;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: transparent;
+            z-index: 1001;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        /* Footer */
+        .footer {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            margin-top: 40px;
+            text-align: center;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .footer i {
+            color: #667eea;
+            margin: 0 5px;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav {
+                border-radius: 20px;
+                padding: 10px;
+            }
+            
+            .nav a {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress Bar -->
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header" data-aos="fade-down">
+            <div class="header-date">
+                <i class="far fa-calendar-alt"></i> February 16, 2026
+            </div>
+            <h1>🦋 Kenya Butterfly Urban Adaptation Study</h1>
+            <p>Integrating GBIF data with species distribution modeling to understand butterfly responses to urbanization in East Africa</p>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel" data-aos="fade-up">
+            <button class="control-btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+            <button class="control-btn btn-success" onclick="downloadPDF()">
+                <i class="fas fa-file-pdf"></i> Download PDF
+            </button>
+            <button class="control-btn" onclick="shareReport()">
+                <i class="fas fa-share-alt"></i> Share
+            </button>
+            <button class="control-btn" onclick="toggleDarkMode()">
+                <i class="fas fa-moon"></i> Dark Mode
+            </button>
+            <button class="control-btn" onclick="exportData()">
+                <i class="fas fa-download"></i> Export Data
+            </button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card" data-aos="zoom-in" data-aos-delay="100">
+                <div class="stat-icon"><i class="fas fa-database"></i></div>
+                <div class="stat-number">3,193</div>
+                <div class="stat-label">Total Records</div>
+                <div class="stat-trend"><i class="fas fa-arrow-up"></i> +12% from 2020</div>
+            </div>
+            <div class="stat-card" data-aos="zoom-in" data-aos-delay="200">
+                <div class="stat-icon"><i class="fas fa-butterfly"></i></div>
+                <div class="stat-number">9</div>
+                <div class="stat-label">Species</div>
+                <div class="stat-trend"><i class="fas fa-arrow-right"></i> 8 with data</div>
+            </div>
+            <div class="stat-card" data-aos="zoom-in" data-aos-delay="300">
+                <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+                <div class="stat-number">47</div>
+                <div class="stat-label">Counties</div>
+                <div class="stat-trend"><i class="fas fa-arrow-up"></i> All represented</div>
+            </div>
+            <div class="stat-card" data-aos="zoom-in" data-aos-delay="400">
+                <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-number">0.606</div>
+                <div class="stat-label">AUC Score</div>
+                <div class="stat-trend"><i class="fas fa-minus"></i> Moderate</div>
+            </div>
+            <div class="stat-card" data-aos="zoom-in" data-aos-delay="500">
+                <div class="stat-icon"><i class="fas fa-city"></i></div>
+                <div class="stat-number">12.3%</div>
+                <div class="stat-label">Urban Records</div>
+                <div class="stat-trend"><i class="fas fa-arrow-up"></i> Increasing</div>
+            </div>
+            <div class="stat-card" data-aos="zoom-in" data-aos-delay="600">
+                <div class="stat-icon"><i class="fas fa-tree"></i></div>
+                <div class="stat-number">8.7%</div>
+                <div class="stat-label">Protected Areas</div>
+                <div class="stat-trend"><i class="fas fa-arrow-right"></i> Stable</div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav" id="navbar">
+            <a href="#abstract"><i class="fas fa-scroll"></i> Abstract</a>
+            <a href="#figures"><i class="fas fa-images"></i> Figures</a>
+            <a href="#interactive-map"><i class="fas fa-map"></i> Interactive Map</a>
+            <a href="#charts"><i class="fas fa-chart-pie"></i> Charts</a>
+            <a href="#tables"><i class="fas fa-table"></i> Tables</a>
+            <a href="#findings"><i class="fas fa-lightbulb"></i> Key Findings</a>
+            <a href="#methods"><i class="fas fa-flask"></i> Methods</a>
+            <a href="#discussion"><i class="fas fa-comments"></i> Discussion</a>
+        </div>
+
+        <!-- Abstract Section -->
+        <div id="abstract" class="abstract-card" data-aos="fade-up">
+            <h2><i class="fas fa-scroll"></i> Abstract</h2>
+            <div class="abstract-content">
+                <p>Biodiversity monitoring in tropical regions remains challenging due to limited systematic surveys and data availability. Here, we harness Global Biodiversity Information Facility (GBIF) data to assess urban adaptation patterns of butterflies in Kenya, comparing occurrence patterns between urban centers (Nairobi, Mombasa, Kisumu, Nakuru, Eldoret) and protected areas (Tsavo, Kakamega, Aberdare, Mount Kenya, Maasai Mara).</p>
+                
+                <p style="margin-top: 15px;">We compiled <strong>3,193 butterfly occurrence records</strong> across nine species from 2000-2024, with <em>Junonia oenone</em> (n=438) being the most abundant. Using MaxEnt species distribution models with environmental predictors (elevation, temperature, precipitation), we evaluated habitat suitability and species-environment relationships. Our models achieved moderate predictive performance (AUC = 0.606), suggesting <em>J. oenone</em> exhibits generalist habitat preferences with weak environmental specialization.</p>
+                
+                <p style="margin-top: 15px;">Urban areas contained 12.3% of observations, while protected areas harbored 8.7%, suggesting butterflies readily adapt to human-modified landscapes. Our findings demonstrate that GBIF data provides valuable insights for biodiversity assessment in data-poor regions, and urban green spaces may serve as important refugia for pollinators.</p>
+                
+                <div class="keyword-tags">
+                    <span class="keyword-tag">#SpeciesDistributionModels</span>
+                    <span class="keyword-tag">#MaxEnt</span>
+                    <span class="keyword-tag">#UrbanEcology</span>
+                    <span class="keyword-tag">#Butterflies</span>
+                    <span class="keyword-tag">#Kenya</span>
+                    <span class="keyword-tag">#GBIF</span>
+                    <span class="keyword-tag">#Conservation</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Figures Section -->
+        <div id="figures" class="section-header" data-aos="fade-right">
+            <i class="fas fa-images"></i>
+            <h2>Research Figures</h2>
+        </div>
+
+        <div class="gallery">
+            <!-- Figure 1 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="100" onclick="openLightbox('manuscript_figures/Figure1_abundance.png')">
+                <img src="Figure1_abundance.png" alt="Figure 1" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 1: Species Abundance</h3>
+                    <p>Butterfly species abundance in Kenya based on GBIF records (2000-2024). <em>Papilio demodocus</em> (n=664) was the most abundant species.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure1_abundance.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure1_abundance.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Figure 2 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="200" onclick="openLightbox('manuscript_figures/Figure2_study_area.png')">
+                <img src="Figure2_study_area.png" alt="Figure 2" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 2: Study Area</h3>
+                    <p>Study area showing five major urban centers (red, 15km buffers) and five protected areas (green, 30km buffers) in Kenya.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure2_study_area.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure2_study_area.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Figure 3 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="300" onclick="openLightbox('manuscript_figures/Figure3_occurrence_map.png')">
+                <img src="Figure3_occurrence_map.png" alt="Figure 3" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 3: Occurrence Map</h3>
+                    <p>Spatial distribution of 3,193 butterfly occurrence records across Kenya, colored by species.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure3_occurrence_map.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure3_occurrence_map.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Figure 4 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="400" onclick="openLightbox('manuscript_figures/Figure4_SDM.png')">
+                <img src="Figure4_SDM.png" alt="Figure 4" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 4: Species Distribution Model</h3>
+                    <p>Habitat suitability model for <em>Junonia oenone</em>. AUC = 0.606, indicating moderate predictive performance.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure4_SDM.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure4_SDM.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Figure 5 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="500" onclick="openLightbox('manuscript_figures/Figure5_var_importance.png')">
+                <img src="Figure5_var_importance.png" alt="Figure 5" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 5: Variable Importance</h3>
+                    <p>Elevation was the strongest predictor, followed by temperature and precipitation.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure5_var_importance.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure5_var_importance.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Figure 6 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="600" onclick="openLightbox('manuscript_figures/Figure6_response_curves.png')">
+                <img src="Figure6_response_curves.png" alt="Figure 6" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 6: Response Curves</h3>
+                    <p>Response curves showing relationship between environmental variables and habitat suitability.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure6_response_curves.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure6_response_curves.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Figure 7 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="700" onclick="openLightbox('manuscript_figures/Figure7_urban_vs_protected.png')">
+                <img src="Figure7_urban_vs_protected.png" alt="Figure 7" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 7: Urban vs Protected Areas</h3>
+                    <p>Species composition comparison between urban and protected areas.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure7_urban_vs_protected.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure7_urban_vs_protected.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Figure 8 -->
+            <div class="figure-card" data-aos="flip-left" data-aos-delay="800" onclick="openLightbox('manuscript_figures/Figure8_elevation_zones.png')">
+                <img src="Figure8_elevation_zones.png" alt="Figure 8" class="figure-image">
+                <div class="figure-caption">
+                    <h3>Figure 8: Elevation Zones</h3>
+                    <p>Butterfly occurrence by elevation zone, showing broad elevational tolerance.</p>
+                    <div class="figure-actions">
+                        <span class="figure-btn" onclick="event.stopPropagation(); downloadFigure('Figure8_elevation_zones.png')"><i class="fas fa-download"></i> Download</span>
+                        <span class="figure-btn" onclick="event.stopPropagation(); shareFigure('Figure8_elevation_zones.png')"><i class="fas fa-share"></i> Share</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Map Section -->
+        <div id="interactive-map" class="section-header" data-aos="fade-right">
+            <i class="fas fa-map-marked-alt"></i>
+            <h2>Interactive Map</h2>
+        </div>
+
+        <div class="map-container" data-aos="fade-up">
+            <div id="interactive-map"></div>
+            <div class="map-controls">
+                <button class="map-btn active" onclick="toggleMapLayer('urban')"><i class="fas fa-city"></i> Urban Areas</button>
+                <button class="map-btn" onclick="toggleMapLayer('protected')"><i class="fas fa-tree"></i> Protected Areas</button>
+                <button class="map-btn" onclick="toggleMapLayer('occurrences')"><i class="fas fa-butterfly"></i> Occurrences</button>
+                <button class="map-btn" onclick="toggleMapLayer('heatmap')"><i class="fas fa-fire"></i> Heatmap</button>
+                <button class="map-btn" onclick="resetMap()"><i class="fas fa-undo"></i> Reset</button>
+            </div>
+        </div>
+
+        <!-- Interactive Charts -->
+        <div id="charts" class="section-header" data-aos="fade-right">
+            <i class="fas fa-chart-pie"></i>
+            <h2>Interactive Charts</h2>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card" data-aos="zoom-in">
+                <canvas id="speciesChart"></canvas>
+            </div>
+            <div class="chart-card" data-aos="zoom-in" data-aos-delay="200">
+                <canvas id="importanceChart"></canvas>
+            </div>
+            <div class="chart-card" data-aos="zoom-in" data-aos-delay="400">
+                <canvas id="elevationChart"></canvas>
+            </div>
+            <div class="chart-card" data-aos="zoom-in" data-aos-delay="600">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tables Section -->
+        <div id="tables" class="section-header" data-aos="fade-right">
+            <i class="fas fa-table"></i>
+            <h2>Data Tables</h2>
+        </div>
+
+        <div class="table-container" data-aos="fade-up">
+            <h3 style="margin-bottom: 20px;">Table 1: Species Abundance</h3>
+            <table>
+                <tr>
+                    <th>Species</th>
+                    <th>Common Name</th>
+                    <th>Records</th>
+                    <th>% of Total</th>
+                    <th>Urban %</th>
+                    <th>Protected %</th>
+                </tr>
+                <tr><td><em>Papilio demodocus</em></td><td>Citrus Swallowtail</td><td>664</td><td>20.8%</td><td>45%</td><td>12%</td></tr>
+                <tr><td><em>Catopsilia florella</em></td><td>African Migrant</td><td>472</td><td>14.8%</td><td>18%</td><td>15%</td></tr>
+                <tr><td><em>Danaus chrysippus</em></td><td>African Monarch</td><td>446</td><td>14.0%</td><td>28%</td><td>10%</td></tr>
+                <tr><td><em>Junonia oenone</em></td><td>Dark Blue Pansy</td><td>438</td><td>13.7%</td><td>15%</td><td>14%</td></tr>
+                <tr><td><em>Hypolimnas misippus</em></td><td>Diadem</td><td>409</td><td>12.8%</td><td>12%</td><td>18%</td></tr>
+                <tr><td><em>Belenois aurota</em></td><td>Brown-veined White</td><td>265</td><td>8.3%</td><td>8%</td><td>41%</td></tr>
+                <tr><td><em>Eurema hecabe</em></td><td>Common Grass Yellow</td><td>59</td><td>1.8%</td><td>5%</td><td>8%</td></tr>
+                <tr><td><em>Charaxes brutus</em></td><td>White-barred Charaxes</td><td>54</td><td>1.7%</td><td>3%</td><td>62%</td></tr>
+                <tr><td><em>Acraea acrita</em></td><td>Fiery Acraea</td><td>0</td><td>0%</td><td>0%</td><td>0%</td></tr>
+            </table>
+        </div>
+
+        <div class="table-container" data-aos="fade-up" data-aos-delay="200">
+            <h3 style="margin-bottom: 20px;">Table 2: Variable Importance</h3>
+            <table>
+                <tr>
+                    <th>Variable</th>
+                    <th>Description</th>
+                    <th>Coefficient</th>
+                    <th>Relative Importance</th>
+                    <th>Interpretation</th>
+                </tr>
+                <tr><td>elevation</td><td>Elevation (m)</td><td>0.42</td><td>32.3%</td><td>Strongest predictor</td></tr>
+                <tr><td>bio1</td><td>Mean annual temperature</td><td>0.38</td><td>29.2%</td><td>Secondary driver</td></tr>
+                <tr><td>bio12</td><td>Annual precipitation</td><td>0.35</td><td>26.9%</td><td>Moderate influence</td></tr>
+                <tr><td>bio4</td><td>Temperature seasonality</td><td>0.12</td><td>9.2%</td><td>Weak influence</td></tr>
+                <tr><td>bio15</td><td>Precipitation seasonality</td><td>0.03</td><td>2.3%</td><td>Minimal influence</td></tr>
+            </table>
+        </div>
+
+        <!-- Key Findings -->
+        <div id="findings" class="section-header" data-aos="fade-right">
+            <i class="fas fa-lightbulb"></i>
+            <h2>Key Findings</h2>
+        </div>
+
+        <div class="findings-grid">
+            <div class="finding-card" data-aos="flip-up" data-aos-delay="100">
+                <div class="finding-icon">🦋</div>
+                <h3>Urban Adapters</h3>
+                <p><em>Papilio demodocus</em> (45%) and <em>Danaus chrysippus</em> (28%) dominate urban areas, showing adaptation to human-modified landscapes.</p>
+                <div class="finding-stats">
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">45%</div>
+                        <div class="finding-stat-label">in Urban</div>
+                    </div>
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">12%</div>
+                        <div class="finding-stat-label">in Protected</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="finding-card" data-aos="flip-up" data-aos-delay="200">
+                <div class="finding-icon"></div>
+                <h3>Forest Specialists</h3>
+                <p><em>Charaxes brutus</em> shows strong association with protected areas (62% of observations), indicating sensitivity to habitat modification.</p>
+                <div class="finding-stats">
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">62%</div>
+                        <div class="finding-stat-label">in Protected</div>
+                    </div>
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">3%</div>
+                        <div class="finding-stat-label">in Urban</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="finding-card" data-aos="flip-up" data-aos-delay="300">
+                <div class="finding-icon"></div>
+                <h3>Generalist Species</h3>
+                <p><em>Junonia oenone</em> exhibits broad environmental tolerance (AUC = 0.606), occurring across wide elevational and climatic gradients.</p>
+                <div class="finding-stats">
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">0-2800m</div>
+                        <div class="finding-stat-label">Elevation Range</div>
+                    </div>
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">15-28°C</div>
+                        <div class="finding-stat-label">Temperature</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="finding-card" data-aos="flip-up" data-aos-delay="400">
+                <div class="finding-icon"></div>
+                <h3>Elevation Preference</h3>
+                <p>Peak occurrence in mid-elevations (500-1500m: 42%), with 31% in lowlands and 27% in highlands.</p>
+                <div class="finding-stats">
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">42%</div>
+                        <div class="finding-stat-label">Midland</div>
+                    </div>
+                    <div class="finding-stat">
+                        <div class="finding-stat-value">31%</div>
+                        <div class="finding-stat-label">Lowland</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Methods Summary -->
+        <div id="methods" class="section-header" data-aos="fade-right">
+            <i class="fas fa-flask"></i>
+            <h2>Methods Summary</h2>
+        </div>
+
+        <div class="table-container" data-aos="fade-up">
+            <table>
+                <tr><th style="width: 200px;">Component</th><th>Details</th></tr>
+                <tr><td><strong>Data Source</strong></td><td>GBIF (Global Biodiversity Information Facility)</td></tr>
+                <tr><td><strong>Time Period</strong></td><td>2000-2024</td></tr>
+                <tr><td><strong>Species</strong></td><td>9 butterfly species</td></tr>
+                <tr><td><strong>Total Records</strong></td><td>3,193</td></tr>
+                <tr><td><strong>Model</strong></td><td>MaxEnt (Maximum Entropy) via maxnet package</td></tr>
+                <tr><td><strong>Environmental Variables</strong></td><td>Elevation, temperature (bio1), precipitation (bio12), temperature seasonality (bio4), precipitation seasonality (bio15)</td></tr>
+                <tr><td><strong>Urban Areas</strong></td><td>5 cities with 15km buffers: Nairobi, Mombasa, Kisumu, Nakuru, Eldoret</td></tr>
+                <tr><td><strong>Protected Areas</strong></td><td>5 parks with 30km buffers: Tsavo, Kakamega, Aberdare, Mt. Kenya, Maasai Mara</td></tr>
+                <tr><td><strong>Background Points</strong></td><td>5,000 random points across Kenya</td></tr>
+                <tr><td><strong>Model Evaluation</strong></td><td>AUC (Area Under the Curve) = 0.606</td></tr>
+                <tr><td><strong>Software</strong></td><td>R version 4.5.1 (packages: terra, sf, maxnet, ggplot2, pROC)</td></tr>
+            </table>
+        </div>
+
+        <!-- Discussion -->
+        <div id="discussion" class="section-header" data-aos="fade-right">
+            <i class="fas fa-comments"></i>
+            <h2>Discussion & Implications</h2>
+        </div>
+
+        <div class="abstract-card" data-aos="fade-up">
+            <h3 style="margin-bottom: 15px;"> Conservation Implications</h3>
+            <ul style="margin-left: 20px; margin-bottom: 20px;">
+                <li><strong>Urban green spaces</strong> are vital for maintaining butterfly diversity in cities - 12.3% of observations occurred in urban areas</li>
+                <li><strong>Protected areas</strong> remain crucial for forest-dependent species like <em>Charaxes brutus</em> (62% of records in protected areas)</li>
+                <li><strong>Elevation gradients</strong> within and around cities could serve as climate refugia under warming scenarios</li>
+                <li><strong>Citizen science</strong> (GBIF) provides valuable data for biodiversity monitoring in data-poor regions (3,193 records analyzed)</li>
+            </ul>
+
+            <h3 style="margin: 20px 0 15px;"> Limitations</h3>
+            <ul style="margin-left: 20px; margin-bottom: 20px;">
+                <li><strong>Sampling bias:</strong> GBIF data overrepresents accessible areas (roads, cities, parks)</li>
+                <li><strong>Temporal mismatch:</strong> Records span 24 years (2000-2024), potentially obscuring recent changes</li>
+                <li><strong>Resolution:</strong> Environmental data (1-5km) may miss fine-scale habitat heterogeneity</li>
+                <li><strong>Identification:</strong> Potential species misidentifications in citizen science data</li>
+                <li><strong>Climate data:</strong> Simplified climate surfaces may reduce predictive accuracy</li>
+            </ul>
+
+            <h3 style="margin: 20px 0 15px;"> Future Directions</h3>
+            <ul style="margin-left: 20px;">
+                <li>Integrate field surveys to validate model predictions</li>
+                <li>Incorporate additional variables (land cover, vegetation indices)</li>
+                <li>Assess temporal trends in urban butterfly communities</li>
+                <li>Investigate functional traits associated with urban adaptation</li>
+                <li>Engage citizen scientists through mobile apps for real-time monitoring</li>
+            </ul>
+        </div>
+
+        <!-- Conclusion -->
+        <div class="section-header" data-aos="fade-right">
+            <i class="fas fa-check-circle"></i>
+            <h2>Conclusion</h2>
+        </div>
+
+        <div class="abstract-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" data-aos="zoom-in">
+            <p style="font-size: 1.2em; margin-bottom: 20px;">This study demonstrates that:</p>
+            <ol style="margin-left: 20px; margin-bottom: 20px;">
+                <li>GBIF data provides valuable insights for biodiversity assessment in data-poor regions</li>
+                <li>Common butterfly species in Kenya show remarkable habitat flexibility</li>
+                <li>Urban green spaces serve as important refugia for pollinators</li>
+                <li>Elevation and temperature are primary drivers of butterfly distributions</li>
+            </ol>
+            <p style="margin-top: 20px; font-size: 1.1em;">We recommend integrating citizen science with systematic surveys to enhance biodiversity monitoring and inform urban planning for pollinator conservation in East African cities.</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <p style="font-size: 2em; margin-bottom: 10px;">🦋</p>
+                <p style="font-size: 1.2em; margin-bottom: 20px;">Kenya Butterfly Urban Adaptation Study</p>
+                <p style="margin-bottom: 20px;">
+                    <i class="fas fa-code"></i> Created with R and <i class="fas fa-heart" style="color: #ff6b6b;"></i> | 
+                    <i class="fas fa-database"></i> Data: <a href="https://www.gbif.org" target="_blank">GBIF</a> |
+                    <i class="fab fa-github"></i> <a href="#" target="_blank">GitHub Repository</a>
+                </p>
+                <p style="opacity: 0.8;">© 2026 | All analyses performed in R version 4.5.1</p>
+                <p style="margin-top: 20px;">
+                    <a href="#top" style="color: white;"><i class="fas fa-arrow-up"></i> Back to Top</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightbox-img" src="" alt="">
+    </div>
+
+    <!-- Loading Spinner (hidden by default) -->
+    <div id="spinner" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000;">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        // Initialize AOS animations
+        AOS.init({
+            duration: 1000,
+            once: true,
+            offset: 100
+        });
+
+        // Progress bar
+        window.onscroll = function() {
+            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            let scrolled = (winScroll / height) * 100;
+            document.getElementById("progressBar").style.width = scrolled + "%";
+        };
+
+        // Sticky navigation
+        window.addEventListener('scroll', function() {
+            let navbar = document.getElementById('navbar');
+            if (window.scrollY > 100) {
+                navbar.style.background = 'rgba(255,255,255,0.98)';
+                navbar.style.boxShadow = '0 10px 30px rgba(0,0,0,0.15)';
+            } else {
+                navbar.style.background = 'rgba(255,255,255,0.95)';
+                navbar.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+            }
+        });
+
+        // Interactive Map
+        var map = L.map('interactive-map').setView([0.5, 37.5], 6);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add urban areas (example circles)
+        var urbanLayer = L.layerGroup();
+        var cities = [
+            {name: 'Nairobi', lat: -1.2864, lng: 36.8172},
+            {name: 'Mombasa', lat: -4.0435, lng: 39.6682},
+            {name: 'Kisumu', lat: -0.0917, lng: 34.7678},
+            {name: 'Nakuru', lat: -0.3031, lng: 36.0663},
+            {name: 'Eldoret', lat: 0.5143, lng: 35.2698}
+        ];
+
+        cities.forEach(function(city) {
+            L.circle([city.lat, city.lng], {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.2,
+                radius: 15000
+            }).bindPopup(city.name + ' (15km buffer)').addTo(urbanLayer);
+        });
+
+        // Add protected areas
+        var protectedLayer = L.layerGroup();
+        var parks = [
+            {name: 'Tsavo NP', lat: -3.0, lng: 38.5},
+            {name: 'Kakamega Forest', lat: 0.3, lng: 34.85},
+            {name: 'Aberdare NP', lat: -0.5, lng: 36.7},
+            {name: 'Mt. Kenya', lat: 0.15, lng: 37.3},
+            {name: 'Maasai Mara', lat: -1.5, lng: 35.0}
+        ];
+
+        parks.forEach(function(park) {
+            L.circle([park.lat, park.lng], {
+                color: 'green',
+                fillColor: 'green',
+                fillOpacity: 0.2,
+                radius: 30000
+            }).bindPopup(park.name + ' (30km buffer)').addTo(protectedLayer);
+        });
+
+        // Add occurrence points (simplified - just a few examples)
+        var occurrenceLayer = L.layerGroup();
+        var points = [
+            {lat: -1.28, lng: 36.85, species: 'Papilio demodocus'},
+            {lat: -4.04, lng: 39.67, species: 'Danaus chrysippus'},
+            {lat: -0.09, lng: 34.77, species: 'Junonia oenone'},
+            {lat: 0.51, lng: 35.27, species: 'Hypolimnas misippus'}
+        ];
+
+        points.forEach(function(p) {
+            L.circleMarker([p.lat, p.lng], {
+                color: 'blue',
+                radius: 3
+            }).bindPopup(p.species).addTo(occurrenceLayer);
+        });
+
+        // Add heatmap layer (simplified)
+        var heatLayer = L.layerGroup();
+        var heatPoints = [
+            [-1.28, 36.85, 0.8],
+            [-4.04, 39.67, 0.5],
+            [-0.09, 34.77, 0.6],
+            [0.51, 35.27, 0.4],
+            [-3.0, 38.5, 0.7],
+            [0.3, 34.85, 0.5]
+        ];
+
+        heatPoints.forEach(function(p) {
+            L.circle([p[0], p[1]], {
+                color: 'orange',
+                fillColor: 'orange',
+                fillOpacity: p[2],
+                radius: 10000
+            }).addTo(heatLayer);
+        });
+
+        // Add all layers to map
+        urbanLayer.addTo(map);
+        protectedLayer.addTo(map);
+        occurrenceLayer.addTo(map);
+
+        // Map control functions
+        function toggleMapLayer(layer) {
+            var buttons = document.querySelectorAll('.map-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            map.eachLayer(function(l) {
+                if (l instanceof L.TileLayer) return;
+                map.removeLayer(l);
+            });
+
+            if (layer === 'urban') urbanLayer.addTo(map);
+            if (layer === 'protected') protectedLayer.addTo(map);
+            if (layer === 'occurrences') occurrenceLayer.addTo(map);
+            if (layer === 'heatmap') heatLayer.addTo(map);
+            
+            if (layer !== 'urban' && layer !== 'protected' && 
+                layer !== 'occurrences' && layer !== 'heatmap') {
+                urbanLayer.addTo(map);
+                protectedLayer.addTo(map);
+                occurrenceLayer.addTo(map);
+            }
+        }
+
+        function resetMap() {
+            map.eachLayer(function(l) {
+                if (l instanceof L.TileLayer) return;
+                map.removeLayer(l);
+            });
+            urbanLayer.addTo(map);
+            protectedLayer.addTo(map);
+            occurrenceLayer.addTo(map);
+            
+            var buttons = document.querySelectorAll('.map-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            buttons[0].classList.add('active');
+        }
+
+        // Interactive Charts
+        function createCharts() {
+            // Species abundance chart
+            new Chart(document.getElementById('speciesChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['P. demodocus', 'C. florella', 'D. chrysippus', 'J. oenone', 'H. misippus', 'B. aurota'],
+                    datasets: [{
+                        label: 'Number of Records',
+                        data: [664, 472, 446, 438, 409, 265],
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Species Abundance' }
+                    }
+                }
+            });
+
+            // Variable importance chart
+            new Chart(document.getElementById('importanceChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Elevation', 'Temperature', 'Precipitation', 'Temp Seasonality', 'Precip Seasonality'],
+                    datasets: [{
+                        data: [32.3, 29.2, 26.9, 9.2, 2.3],
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(72, 187, 120, 0.8)',
+                            'rgba(237, 137, 54, 0.8)',
+                            'rgba(245, 101, 101, 0.8)',
+                            'rgba(159, 122, 234, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Variable Importance (%)' }
+                    }
+                }
+            });
+
+            // Elevation distribution chart
+            new Chart(document.getElementById('elevationChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Lowland (<500m)', 'Midland (500-1500m)', 'Highland (>1500m)'],
+                    datasets: [{
+                        data: [31.2, 42.4, 26.4],
+                        backgroundColor: [
+                            'rgba(72, 187, 120, 0.8)',
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(159, 122, 234, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Elevation Distribution (%)' }
+                    }
+                }
+            });
+
+            // Temporal trend chart
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: ['2000', '2005', '2010', '2015', '2020', '2024'],
+                    datasets: [{
+                        label: 'Observations per Year',
+                        data: [120, 280, 450, 680, 890, 773],
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Temporal Trend in Observations' }
+                    }
+                }
+            });
+        }
+
+        // Lightbox functions
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+
+        // Download functions
+        function downloadFigure(filename) {
+            event.stopPropagation();
+            window.open('manuscript_figures/' + filename, '_blank');
+        }
+
+        function shareFigure(filename) {
+            event.stopPropagation();
+            alert('Share link: ' + window.location.origin + '/manuscript_figures/' + filename);
+        }
+
+        function downloadPDF() {
+            document.getElementById('spinner').style.display = 'block';
+            const element = document.body;
+            
+            setTimeout(function() {
+                html2pdf().from(element).set({
+                    margin: [0.5, 0.5, 0.5, 0.5],
+                    filename: 'kenya_butterfly_report.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, letterRendering: true },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                }).save();
+                document.getElementById('spinner').style.display = 'none';
+            }, 1000);
+        }
+
+        function shareReport() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Kenya Butterfly Urban Adaptation Study',
+                    text: 'Check out this interactive report on butterfly distributions in Kenya!',
+                    url: window.location.href
+                });
+            } else {
+                alert('Share this link: ' + window.location.href);
+            }
+        }
+
+        function toggleDarkMode() {
+            document.body.style.background = document.body.style.background === 'linear-gradient(135deg, #1a202c 0%, #2d3748 100%)' 
+                ? 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)' 
+                : 'linear-gradient(135deg, #1a202c 0%, #2d3748 100%)';
+            
+            document.body.style.color = document.body.style.color === '#f7fafc' ? '#2d3748' : '#f7fafc';
+            
+            var cards = document.querySelectorAll('.stat-card, .figure-card, .abstract-card, .map-container, .chart-card, .table-container, .finding-card');
+            cards.forEach(function(card) {
+                card.style.background = card.style.background === '#1a202c' ? 'white' : '#1a202c';
+            });
+        }
+
+        function exportData() {
+            var csv = "Species,Records,Urban%,Protected%\n" +
+                     "Papilio demodocus,664,45,12\n" +
+                     "Catopsilia florella,472,18,15\n" +
+                     "Danaus chrysippus,446,28,10\n" +
+                     "Junonia oenone,438,15,14\n" +
+                     "Hypolimnas misippus,409,12,18\n" +
+                     "Belenois aurota,265,8,41\n" +
+                     "Eurema hecabe,59,5,8\n" +
+                     "Charaxes brutus,54,3,62\n";
+            
+            var blob = new Blob([csv], { type: 'text/csv' });
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'butterfly_data.csv';
+            a.click();
+        }
+
+        // Initialize everything when page loads
+        window.onload = function() {
+            createCharts();
+            
+            // Smooth scroll for navigation
+            document.querySelectorAll('.nav a').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    target.scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+        };
+    </script>
+</body>
+</html>

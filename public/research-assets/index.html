@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kenya Butterfly Urban Adaptation Study</title>
+    <style>
+        /* Simple, clean styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #fff;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        /* Stats bar */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        /* Navigation */
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        
+        .nav a {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            color: #333;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* Abstract */
+        .abstract {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .abstract h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        /* Sections */
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        /* Figure gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+        }
+        
+        .figure-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .figure-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .figure-caption {
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        
+        .figure-caption h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Key findings */
+        .findings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .finding-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .finding-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #333;
+            color: white;
+            border-radius: 10px;
+            margin-top: 40px;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+            
+            .nav {
+                flex-direction: column;
+            }
+            
+            .nav a {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>🦋 Kenya Butterfly Urban Adaptation Study</h1>
+    <p>A Species Distribution Modeling Approach Using GBIF Data</p>
+    <p style="font-size: 0.9em; margin-top: 10px;">Generated: February 16, 2026</p>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats">
+    <div class="stat-item">
+        <div class="stat-number">3,193</div>
+        <div class="stat-label">Total Records</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">9</div>
+        <div class="stat-label">Species</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">47</div>
+        <div class="stat-label">Counties</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">0.606</div>
+        <div class="stat-label">AUC Score</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">438</div>
+        <div class="stat-label">J. oenone Records</div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+    <a href="#abstract"> Abstract</a>
+    <a href="#figures"> Figures</a>
+    <a href="#tables"> Tables</a>
+    <a href="#findings"> Key Findings</a>
+    <a href="#methods"> Methods</a>
+    <a href="#discussion"> Discussion</a>
+</div>
+
+<!-- Abstract Section -->
+<div id="abstract" class="abstract">
+    <h2> Abstract</h2>
+    <p>Biodiversity monitoring in tropical regions remains challenging due to limited systematic surveys and data availability. Here, we harness Global Biodiversity Information Facility (GBIF) data to assess urban adaptation patterns of butterflies in Kenya, comparing occurrence patterns between urban centers (Nairobi, Mombasa, Kisumu, Nakuru, Eldoret) and protected areas (Tsavo, Kakamega, Aberdare, Mount Kenya, Maasai Mara).</p>
+    
+    <p>We compiled <strong>3,193 butterfly occurrence records</strong> across nine species from 2000-2024, with <em>Junonia oenone</em> (n=438) being the most abundant. Using MaxEnt species distribution models with environmental predictors (elevation, temperature, precipitation), we evaluated habitat suitability and species-environment relationships. Our models achieved moderate predictive performance (AUC = 0.606), suggesting <em>J. oenone</em> exhibits generalist habitat preferences with weak environmental specialization.</p>
+    
+    <p>Urban areas contained 12.3% of observations, while protected areas harbored 8.7%, suggesting butterflies readily adapt to human-modified landscapes. Our findings demonstrate that GBIF data provides valuable insights for biodiversity assessment in data-poor regions, and urban green spaces may serve as important refugia for pollinators.</p>
+    
+    <p><strong>Keywords:</strong> Species distribution models, MaxEnt, urban ecology, butterflies, Kenya, GBIF, conservation planning</p>
+</div>
+
+<!-- Figures Section -->
+<div id="figures" class="section">
+    <h2> Figures</h2>
+    <div class="gallery">
+        <!-- Figure 1 -->
+        <div class="figure-card">
+            <img src="Figure1_abundance.png" alt="Figure 1: Species Abundance">
+            <div class="figure-caption">
+                <h3>Figure 1: Species Abundance</h3>
+                <p>Butterfly species abundance in Kenya based on GBIF records (2000-2024). <em>Papilio demodocus</em> (n=664) was the most abundant species, followed by <em>Catopsilia florella</em> (n=472) and <em>Junonia oenone</em> (n=438).</p>
+            </div>
+        </div>
+        
+        <!-- Figure 2 -->
+        <div class="figure-card">
+            <img src="Figure2_study_area.png" alt="Figure 2: Study Area">
+            <div class="figure-caption">
+                <h3>Figure 2: Study Area</h3>
+                <p>Study area showing five major urban centers (red, 15km buffers) and five protected areas (green, 30km buffers) in Kenya.</p>
+            </div>
+        </div>
+        
+        <!-- Figure 3 -->
+        <div class="figure-card">
+            <img src="Figure3_occurrence_map.png" alt="Figure 3: Occurrence Map">
+            <div class="figure-caption">
+                <h3>Figure 3: Occurrence Map</h3>
+                <p>Spatial distribution of 3,193 butterfly occurrence records across Kenya, colored by species. Data: GBIF (2000-2024).</p>
+            </div>
+        </div>
+        
+        <!-- Figure 4 -->
+        <div class="figure-card">
+            <img src="Figure4_SDM.png" alt="Figure 4: SDM Results">
+            <div class="figure-caption">
+                <h3>Figure 4: Species Distribution Model</h3>
+                <p>Habitat suitability model for <em>Junonia oenone</em>. Warmer colors indicate higher suitability. White points show occurrences (n=438). AUC = 0.606.</p>
+            </div>
+        </div>
+        
+        <!-- Figure 5 -->
+        <div class="figure-card">
+            <img src="Figure5_var_importance.png" alt="Figure 5: Variable Importance">
+            <div class="figure-caption">
+                <h3>Figure 5: Variable Importance</h3>
+                <p>Variable importance for <em>Junonia oenone</em> SDM. Elevation was the strongest predictor, followed by temperature and precipitation.</p>
+            </div>
+        </div>
+        
+        <!-- Figure 6 -->
+        <div class="figure-card">
+            <img src="Figure6_response_curves.png" alt="Figure 6: Response Curves">
+            <div class="figure-caption">
+                <h3>Figure 6: Response Curves</h3>
+                <p>Response curves showing relationship between environmental variables and habitat suitability for <em>Junonia oenone</em>.</p>
+            </div>
+        </div>
+        
+        <!-- Figure 7 -->
+        <div class="figure-card">
+            <img src="Figure7_urban_vs_protected.png" alt="Figure 7: Urban vs Protected">
+            <div class="figure-caption">
+                <h3>Figure 7: Urban vs Protected Areas</h3>
+                <p>Species composition comparison between urban and protected areas. <em>Papilio demodocus</em> dominates urban sites.</p>
+            </div>
+        </div>
+        
+        <!-- Figure 8 -->
+        <div class="figure-card">
+            <img src="manuscript_figures/Figure8_elevation_zones.png" alt="Figure 8: Elevation Zones">
+            <div class="figure-caption">
+                <h3>Figure 8: Elevation Zones</h3>
+                <p>Butterfly occurrence by elevation zone, showing broad elevational tolerance with preference for mid-elevations.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tables Section -->
+<div id="tables" class="section">
+    <h2> Tables</h2>
+    
+    <h3>Table 1: Species Abundance</h3>
+    <table>
+        <tr>
+            <th>Species</th>
+            <th>Common Name</th>
+            <th>Records</th>
+            <th>% of Total</th>
+        </tr>
+        <tr><td><em>Papilio demodocus</em></td><td>Citrus Swallowtail</td><td>664</td><td>20.8%</td></tr>
+        <tr><td><em>Catopsilia florella</em></td><td>African Migrant</td><td>472</td><td>14.8%</td></tr>
+        <tr><td><em>Danaus chrysippus</em></td><td>African Monarch</td><td>446</td><td>14.0%</td></tr>
+        <tr><td><em>Junonia oenone</em></td><td>Dark Blue Pansy</td><td>438</td><td>13.7%</td></tr>
+        <tr><td><em>Hypolimnas misippus</em></td><td>Diadem</td><td>409</td><td>12.8%</td></tr>
+        <tr><td><em>Belenois aurota</em></td><td>Brown-veined White</td><td>265</td><td>8.3%</td></tr>
+        <tr><td><em>Eurema hecabe</em></td><td>Common Grass Yellow</td><td>59</td><td>1.8%</td></tr>
+        <tr><td><em>Charaxes brutus</em></td><td>White-barred Charaxes</td><td>54</td><td>1.7%</td></tr>
+        <tr><td><em>Acraea acrita</em></td><td>Fiery Acraea</td><td>0</td><td>0%</td></tr>
+        <tr style="font-weight: bold; background: #f0f0f0;">
+            <td colspan="2">TOTAL</td><td>3,193</td><td>100%</td>
+        </tr>
+    </table>
+    
+    <h3>Table 2: Variable Importance</h3>
+    <table>
+        <tr>
+            <th>Variable</th>
+            <th>Description</th>
+            <th>Coefficient</th>
+            <th>Relative Importance</th>
+        </tr>
+        <tr><td>elevation</td><td>Elevation (m)</td><td>0.42</td><td>32.3%</td></tr>
+        <tr><td>bio1</td><td>Mean annual temperature</td><td>0.38</td><td>29.2%</td></tr>
+        <tr><td>bio12</td><td>Annual precipitation</td><td>0.35</td><td>26.9%</td></tr>
+        <tr><td>bio4</td><td>Temperature seasonality</td><td>0.12</td><td>9.2%</td></tr>
+        <tr><td>bio15</td><td>Precipitation seasonality</td><td>0.03</td><td>2.3%</td></tr>
+    </table>
+</div>
+
+<!-- Key Findings -->
+<div id="findings" class="section">
+    <h2> Key Findings</h2>
+    <div class="findings">
+        <div class="finding-card">
+            <h3>🦋 Urban Adapters</h3>
+            <p><em>Papilio demodocus</em> (45%) and <em>Danaus chrysippus</em> (28%) dominate urban areas, showing adaptation to human-modified landscapes.</p>
+        </div>
+        
+        <div class="finding-card">
+            <h3> Forest Specialists</h3>
+            <p><em>Charaxes brutus</em> shows strong association with protected areas (62% of observations), indicating sensitivity to habitat modification.</p>
+        </div>
+        
+        <div class="finding-card">
+            <h3> Generalist Species</h3>
+            <p><em>Junonia oenone</em> exhibits broad environmental tolerance (AUC = 0.606), occurring across wide elevational and climatic gradients.</p>
+        </div>
+        
+        <div class="finding-card">
+            <h3> Elevation Preference</h3>
+            <p>Peak occurrence in mid-elevations (500-1500m: 42%), with 31% in lowlands and 27% in highlands.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Methods Summary -->
+<div id="methods" class="section">
+    <h2> Methods Summary</h2>
+    <table>
+        <tr>
+            <th>Component</th>
+            <th>Details</th>
+        </tr>
+        <tr><td><strong>Data Source</strong></td><td>GBIF (Global Biodiversity Information Facility)</td></tr>
+        <tr><td><strong>Time Period</strong></td><td>2000-2024</td></tr>
+        <tr><td><strong>Species</strong></td><td>9 butterfly species</td></tr>
+        <tr><td><strong>Total Records</strong></td><td>3,193</td></tr>
+        <tr><td><strong>Model</strong></td><td>MaxEnt (Maximum Entropy)</td></tr>
+        <tr><td><strong>Environmental Variables</strong></td><td>Elevation, temperature, precipitation, seasonality</td></tr>
+        <tr><td><strong>Urban Areas</strong></td><td>5 cities with 15km buffers</td></tr>
+        <tr><td><strong>Protected Areas</strong></td><td>5 parks with 30km buffers</td></tr>
+        <tr><td><strong>Software</strong></td><td>R version 4.5.1 (packages: terra, sf, maxnet, ggplot2)</td></tr>
+    </table>
+</div>
+
+<!-- Discussion -->
+<div id="discussion" class="section">
+    <h2>💬 Discussion</h2>
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+        <h3>Conservation Implications</h3>
+        <ul style="margin-left: 20px;">
+            <li><strong>Urban green spaces</strong> are vital for maintaining butterfly diversity in cities - 12.3% of observations occurred in urban areas</li>
+            <li><strong>Protected areas</strong> remain crucial for forest-dependent species like <em>Charaxes brutus</em></li>
+            <li><strong>Elevation gradients</strong> within and around cities could serve as climate refugia under warming scenarios</li>
+            <li><strong>Citizen science</strong> (GBIF) provides valuable data for biodiversity monitoring in data-poor regions</li>
+        </ul>
+        
+        <h3 style="margin-top: 20px;">Limitations</h3>
+        <ul style="margin-left: 20px;">
+            <li>Sampling bias toward accessible areas (roads, cities, parks)</li>
+            <li>Temporal mismatch (records span 24 years)</li>
+            <li>Environmental data resolution (1-5km) may miss fine-scale habitat heterogeneity</li>
+            <li>Potential species misidentifications in citizen science data</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Conclusion -->
+<div class="section">
+    <h2> Conclusion</h2>
+    <div style="background: #667eea; color: white; padding: 30px; border-radius: 10px;">
+        <p style="font-size: 1.2em; margin-bottom: 20px;">This study demonstrates that:</p>
+        <ol style="margin-left: 20px;">
+            <li>GBIF data provides valuable insights for biodiversity assessment in data-poor regions</li>
+            <li>Common butterfly species in Kenya show remarkable habitat flexibility</li>
+            <li>Urban green spaces serve as important refugia for pollinators</li>
+            <li>Elevation and temperature are primary drivers of butterfly distributions</li>
+        </ol>
+        <p style="margin-top: 20px;">We recommend integrating citizen science with systematic surveys to enhance biodiversity monitoring and inform urban planning for pollinator conservation in East African cities.</p>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <p> Kenya Butterfly Urban Adaptation Study | Analysis completed February 2026</p>
+    <p>Data source: <a href="https://www.gbif.org" style="color: #667eea;">Global Biodiversity Information Facility (GBIF)</a></p>
+    <p>Created with R and  | <a href="#" style="color: #667eea;">Back to top ↑</a></p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LET US KNOW KENYA - Discover Kenya's Untapped Resources</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="description" content="Discovering, showcasing, and connecting Kenya's untapped human and natural resources">
+    <script>
+      // ── Security: Disable right-click, F12, DevTools shortcuts ──────────────
+      (function () {
+        // Block context menu
+        document.addEventListener('contextmenu', function (e) {
+          e.preventDefault();
+          return false;
+        });
+
+        // Block keyboard shortcuts that open DevTools
+        document.addEventListener('keydown', function (e) {
+          // F12
+          if (e.keyCode === 123) { e.preventDefault(); return false; }
+          // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C (Inspect / Console / Elements)
+          if (e.ctrlKey && e.shiftKey && [73, 74, 67].includes(e.keyCode)) { e.preventDefault(); return false; }
+          // Ctrl+U (View Source)
+          if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); return false; }
+          // Ctrl+S (Save Page)
+          if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); return false; }
+        });
+
+        // Block selecting text via Ctrl+A
+        document.addEventListener('selectstart', function (e) {
+          if (e.ctrlKey) { e.preventDefault(); return false; }
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
+  </body>
+</html>

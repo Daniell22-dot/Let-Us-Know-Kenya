@@ -1,0 +1,54 @@
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db.config');
+
+const Resource = sequelize.define('Resource', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    region: {
+        type: DataTypes.STRING
+    },
+    type: {
+        type: DataTypes.STRING
+    },
+    detail: {
+        type: DataTypes.STRING
+    },
+    description: {
+        type: DataTypes.TEXT
+    },
+    coordinates: {
+        type: DataTypes.JSON // { lat: number, lng: number }
+    },
+    images: {
+        type: DataTypes.ARRAY(DataTypes.STRING)
+    },
+    status: {
+        type: DataTypes.ENUM('published', 'draft', 'pending'),
+        defaultValue: 'published'
+    },
+    featured: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    category: {
+        type: DataTypes.STRING
+    },
+    economicValue: {
+        type: DataTypes.STRING
+    },
+    conservationStatus: {
+        type: DataTypes.STRING
+    },
+    tourismPotential: {
+        type: DataTypes.STRING
+    }
+});
+
+module.exports = Resource;
