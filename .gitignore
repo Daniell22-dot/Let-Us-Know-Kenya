@@ -18,5 +18,5 @@ coverage/
 *.tsbuildinfo
 # Research folder
 research/
-
+node_modules/
 
