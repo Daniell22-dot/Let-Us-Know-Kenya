@@ -36,7 +36,11 @@ const request = async (path, { method = 'GET', body, auth = false, headers = {} 
     const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
     const requestHeaders = { ...headers };
-    if (token) requestHeaders['x-access-token'] = token;
+    // An explicitly supplied token wins, so callers can validate a candidate
+    // token that is not yet in localStorage.
+    if (token && !requestHeaders['x-access-token']) {
+        requestHeaders['x-access-token'] = token;
+    }
     // Let the browser set the multipart Content-Type so the boundary is correct.
     if (body !== undefined && !isFormData) requestHeaders['Content-Type'] = 'application/json';
 
