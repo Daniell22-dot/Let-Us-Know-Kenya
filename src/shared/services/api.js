@@ -162,6 +162,11 @@ const api = {
     updateProject: (id, data) => request(`/projects/${id}`, { method: 'PUT', body: data, auth: true }),
     deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE', auth: true }),
 
+    // ─── Market (NSE Kenya) ────────────────────────────────────────────────────
+    getMarketOverview: () => request('/market/overview'),
+    getMarketHistory: (params) => request(`/market/history${qs(params || {})}`),
+    syncMarket: () => request('/market/sync', { method: 'POST', auth: true }),
+
     // ─── Activity Logging ─────────────────────────────────────────────────────
     logActivity: async (action, details, pageUrl) => {
         try {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import HomePage from './HomePage';
@@ -8,6 +8,10 @@ import ResourcesPage from "./ResourcesPage";
 import StartupPage from './StartupPage';
 import ResearchPage from './ResearchPage';
 import WatchlistPage from './WatchlistPage';
+
+// Recharts is large, so the market dashboard is split into its own chunk and
+// only downloaded by visitors who actually open it.
+const MarketPage = lazy(() => import('./MarketPage'));
 import SearchResultsPage from './SearchResultsPage';
 import AboutPage from './AboutPage';
 import LoginSuccess from './LoginSuccess';
@@ -31,6 +35,15 @@ function PublicApp() {
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/podcasts" element={<PodcastPage />} />
                 <Route path="/resources" element={<ResourcesPage />} />
+                <Route path="/market" element={
+                  <Suspense fallback={
+                    <div className="flex min-h-screen items-center justify-center bg-gray-50 text-sm text-gray-500">
+                      Loading market data&hellip;
+                    </div>
+                  }>
+                    <MarketPage />
+                  </Suspense>
+                } />
                 <Route path="/startups" element={<StartupPage />} />
                 <Route path="/research" element={<ResearchPage />} />
                 <Route path="/watchlist" element={<WatchlistPage />} />

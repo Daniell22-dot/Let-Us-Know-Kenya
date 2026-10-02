@@ -5,6 +5,7 @@ import PodcastCard from './components/PodcastCard.jsx'
 import { CardSkeleton } from './components/SkeletonLoaders.jsx'
 import api from '../shared/services/api.js'
 import { formatNumber } from '../shared/utils/helpers'
+import { CONTENT_CATEGORIES, buildCategoryOptions } from '../shared/data/constants.js'
 
 const PodcastPage = () => {
   const [podcasts, setPodcasts] = React.useState([])
@@ -27,7 +28,7 @@ const PodcastPage = () => {
     fetchPodcasts()
   }, [])
 
-  const categories = ['All', 'Business', 'Technology', 'Environment', 'Culture', 'Innovation', 'Artificial Intelligence', 'Education', 'Health']
+  const categories = buildCategoryOptions(podcasts.map(podcast => podcast.category), CONTENT_CATEGORIES)
 
   const filteredPodcasts = podcasts
     .filter(podcast =>

@@ -4,12 +4,16 @@ node_modules/
 .pnp.js
 
 # Environment variables -- never commit real secrets.
-.env.example
+# Only the real files are ignored. The `.env.example` templates hold no
+# credentials and are tracked on purpose; a bare `.env.example` pattern here
+# would also match server/.env.example and drop it from the repository.
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
+!server/.env.example
 
 # Build output
 dist/

@@ -11,6 +11,8 @@ const Project = require('./Project');
 const WatchlistItem = require('./WatchlistItem');
 const Subscriber = require('./Subscriber');
 const ActivityLog = require('./ActivityLog');
+const MarketIssuer = require('./MarketIssuer');
+const MarketSnapshot = require('./MarketSnapshot');
 
 const db = {
     Sequelize,
@@ -26,7 +28,9 @@ const db = {
         Project,
         WatchlistItem,
         Subscriber,
-        ActivityLog
+        ActivityLog,
+        MarketIssuer,
+        MarketSnapshot
     },
     podcasts: Podcast,
     resources: Resource,
@@ -38,7 +42,9 @@ const db = {
     projects: Project,
     watchlistItems: WatchlistItem,
     subscribers: Subscriber,
-    activityLogs: ActivityLog
+    activityLogs: ActivityLog,
+    marketIssuers: MarketIssuer,
+    marketSnapshots: MarketSnapshot
 };
 
 module.exports = db;

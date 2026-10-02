@@ -4,6 +4,7 @@ import { Search, Calendar, User, TrendingUp, Clock, BookOpen, Filter } from 'luc
 import BlogCard from './components/BlogCard.jsx'
 import { CardSkeleton } from './components/SkeletonLoaders.jsx'
 import api from '../shared/services/api.js'
+import { CONTENT_CATEGORIES, buildCategoryOptions } from '../shared/data/constants.js'
 
 const BlogPage = () => {
   const [blogPosts, setBlogPosts] = useState([])
@@ -26,7 +27,7 @@ const BlogPage = () => {
     fetchBlogs()
   }, [])
 
-  const categories = ['All', 'Innovation', 'Tourism', 'Agriculture', 'Technology', 'Business', 'Culture', 'Artificial Intelligence', 'Environment', 'Health']
+  const categories = buildCategoryOptions(blogPosts.map(post => post.category), CONTENT_CATEGORIES)
 
   const filteredPosts = blogPosts
     .filter(post =>

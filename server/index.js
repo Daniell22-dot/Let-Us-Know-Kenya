@@ -94,6 +94,7 @@ const watchlistRoutes = require('./routes/watchlist.routes');
 const searchRoutes = require('./routes/search.routes');
 const newsletterRoutes = require('./routes/newsletter.routes');
 const activityRoutes = require('./routes/activity.routes');
+const marketRoutes = require('./routes/market.routes');
 
 // Routes Versioning (v1)
 const v1Router = express.Router();
@@ -110,6 +111,7 @@ v1Router.use('/watchlist', watchlistRoutes);
 v1Router.use('/search', searchRoutes);
 v1Router.use('/newsletter', newsletterRoutes);
 v1Router.use('/activity', activityRoutes);
+v1Router.use('/market', marketRoutes);
 
 app.use('/api/v1', v1Router);
 // Fallback for old API calls (optional, but good for transition)

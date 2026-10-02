@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Search, Filter, Map, Users, Grid, List, Download, Share2 } from 'lucide-react'
 import ResourceCard from './components/ResourceCard.jsx'
 import api from '../shared/services/api.js'
+import { RESOURCE_CATEGORIES, buildCategoryOptions, uniqueStrings } from '../shared/data/constants.js'
 
 const ResourcesPage = () => {
   const [naturalResources, setNaturalResources] = React.useState([])
@@ -30,8 +31,8 @@ const ResourcesPage = () => {
 
   const resources = activeTab === 'natural' ? naturalResources : humanResources
 
-  const regions = ['All', ...Array.from(new Set(resources.map(r => r.region)))]
-  const categories = ['All', ...Array.from(new Set(resources.map(r => r.category)))]
+  const regions = ['All', ...uniqueStrings(resources.map(r => r.region))]
+  const categories = buildCategoryOptions(resources.map(r => r.category), RESOURCE_CATEGORIES[activeTab])
 
   const filteredResources = resources
     .filter(resource =>
@@ -54,7 +55,7 @@ const ResourcesPage = () => {
     },
     human: {
       total: humanResources.length,
-      categories: Array.from(new Set(humanResources.map(r => r.category))).length,
+      categories: uniqueStrings(humanResources.map(r => r.category)).length,
       regions: Array.from(new Set(humanResources.map(r => r.region))).length
     }
   }

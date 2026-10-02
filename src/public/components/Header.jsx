@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, Headphones, BookOpen, Map, Users, Home, Search, FlaskConical, User, LogOut } from 'lucide-react'
+import { Menu, X, Headphones, BookOpen, Map, Users, Home, Search, FlaskConical, User, LogOut, TrendingUp } from 'lucide-react'
 import { useAuth } from '../AuthContext';
 import AuthModal from './AuthModal';
 
@@ -26,6 +26,7 @@ const Header = () => {
     { path: '/podcasts', label: 'Podcasts', icon: <Headphones size={16} /> },
     { path: '/blog', label: 'Blog', icon: <BookOpen size={16} /> },
     { path: '/resources', label: 'Resources', icon: <Map size={16} /> },
+    { path: '/market', label: 'Market', icon: <TrendingUp size={16} /> },
     { path: '/research', label: 'Research', icon: <FlaskConical size={16} /> },
     { path: '/about', label: 'About', icon: <Users size={16} /> }
   ]
