@@ -43,3 +43,6 @@ server/uploads/
 *.swp
 .DS_Store
 Thumbs.db
+*.docx
+*.pdf
+**.xlsx
