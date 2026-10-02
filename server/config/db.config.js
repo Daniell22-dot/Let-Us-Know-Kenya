@@ -10,7 +10,10 @@ const common = {
     pool: {
         max: 5,
         min: 0,
-        acquire: 30000,
+        // Managed Postgres over TLS is not instant: a cold connection to Neon
+        // takes roughly 20s here, so the default 30s acquire window leaves no
+        // headroom and fails intermittently on boot.
+        acquire: 60000,
         idle: 10000
     }
 };
