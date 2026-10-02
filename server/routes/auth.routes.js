@@ -4,7 +4,7 @@ const authController = require('../controllers/auth.controller');
 const upload = require('../middleware/upload');
 const { verifyToken, isAdmin } = require('../middleware/authJwt');
 const passport = require('passport');
-const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
 // User Authentication
 router.post("/register", authController.register);

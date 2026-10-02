@@ -1,6 +1,6 @@
-# LUK Kenya
+﻿# LUK Kenya
 
-**Let Us Know Kenya** — a platform for discovering Kenyan human and natural
+**Let Us Know Kenya** â€” a platform for discovering Kenyan human and natural
 resources: startups, research projects, podcasts, blog posts and resources.
 
 Two-part application:
@@ -81,16 +81,16 @@ psql -U postgres -c "CREATE DATABASE luk_kenya;"
 Two terminals:
 
 ```bash
-# Terminal 1 — API on http://localhost:5000
+# Terminal 1 â€” API on http://localhost:5000
 cd server && npm run dev
 ```
 
 ```bash
-# Terminal 2 — frontend on http://localhost:5173
+# Terminal 2 â€” frontend on http://localhost:3000
 npm run dev
 ```
 
-Open <http://localhost:5173>.
+Open <http://localhost:3000>.
 
 The Vite dev server proxies `/api` and `/uploads` to `http://localhost:5000`
 (see `vite.config.js`), so the browser only ever makes same-origin requests in
@@ -106,17 +106,17 @@ This reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `server/.env`, creates the
 account if needed, or promotes and password-resets it if it already exists. The
 password is hashed by the `User` model hooks, so the plaintext is never stored.
 
-Then visit <http://localhost:5173/admin> and sign in.
+Then visit <http://localhost:3000/admin> and sign in.
 
 > **There are no built-in credentials.** Admin authorisation is enforced by the
-> API, not the browser. Do not add admin passwords to any `VITE_*` variable —
+> API, not the browser. Do not add admin passwords to any `VITE_*` variable â€”
 > Vite inlines those into the public JavaScript bundle.
 
 ---
 
 ## Environment variables
 
-### Frontend — `.env` (see `.env.example`)
+### Frontend â€” `.env` (see `.env.example`)
 
 | Variable | Required | Description |
 | --- | --- | --- |
@@ -125,7 +125,7 @@ Then visit <http://localhost:5173/admin> and sign in.
 Any variable prefixed `VITE_` is embedded in the client bundle and is
 therefore **public**. Never store a secret in one.
 
-### Backend — `server/.env` (see `server/.env.example`)
+### Backend â€” `server/.env` (see `server/.env.example`)
 
 | Variable | Required | Description |
 | --- | --- | --- |
@@ -158,54 +158,54 @@ To enable it, register this exact redirect URI in the Google Cloud console:
 
 ```
 .
-├── index.html                 Vite entry HTML
-├── vite.config.js             Dev server + /api proxy
-├── tailwind.config.js
-├── postcss.config.js
-├── .env.example
-│
-├── public/                    Static assets copied verbatim into dist/
-│   ├── Kenyan_logo.jpeg
-│   └── research-assets/       R analysis scripts, figures, PDFs
-│
-├── src/                       Frontend
-│   ├── index.jsx              React root
-│   ├── App.jsx                Router + admin route guard
-│   ├── styles/globals.css
-│   │
-│   ├── admin/                 /admin panel
-│   │   ├── AdminLogin.jsx     Real server-backed sign-in
-│   │   ├── AdminApp.jsx       Admin shell
-│   │   ├── components/
-│   │   └── pages/             Dashboard, blog, podcasts, resources,
-│   │                         startups, research, analytics
-│   │
-│   ├── public/                Visitor-facing site
-│   │   ├── PublicApp.jsx      Routes + providers
-│   │   ├── AuthContext.jsx    Visitor session (token in localStorage)
-│   │   ├── HomePage.jsx, AboutPage.jsx, BlogPage.jsx, PodcastPage.jsx,
-│   │   │   ResourcesPage.jsx, StartupPage.jsx, ResearchPage.jsx,
-│   │   │   WatchlistPage.jsx, SearchResultsPage.jsx, LoginSuccess.jsx
-│   │   └── components/       Header, Footer, cards, modals, review section
-│   │
-│   └── shared/
-│       ├── services/api.js    Single fetch wrapper + endpoint map
-│       └── utils/auth.js      Admin session helpers
-│
-└── server/                    Backend (CommonJS)
-    ├── index.js               Express app, middleware, routes, shutdown
-    ├── create-admin.js        Seed/promote the admin account
-    ├── drop_tables.js         Destructive schema reset (guarded)
-    ├── .env.example
-    ├── config/
-    │   ├── db.config.js       Sequelize instance
-    │   └── passport.config.js Google OAuth strategy (optional)
-    ├── models/                Sequelize models
-    ├── controllers/           Request handlers
-    ├── routes/                Express routers
-    └── middleware/
-        ├── authJwt.js         verifyToken, isAdmin
-        └── upload.js          Multer with an extension/type allowlist
+â”œâ”€â”€ index.html                 Vite entry HTML
+â”œâ”€â”€ vite.config.js             Dev server + /api proxy
+â”œâ”€â”€ tailwind.config.js
+â”œâ”€â”€ postcss.config.js
+â”œâ”€â”€ .env.example
+â”‚
+â”œâ”€â”€ public/                    Static assets copied verbatim into dist/
+â”‚   â”œâ”€â”€ Kenyan_logo.jpeg
+â”‚   â””â”€â”€ research-assets/       R analysis scripts, figures, PDFs
+â”‚
+â”œâ”€â”€ src/                       Frontend
+â”‚   â”œâ”€â”€ index.jsx              React root
+â”‚   â”œâ”€â”€ App.jsx                Router + admin route guard
+â”‚   â”œâ”€â”€ styles/globals.css
+â”‚   â”‚
+â”‚   â”œâ”€â”€ admin/                 /admin panel
+â”‚   â”‚   â”œâ”€â”€ AdminLogin.jsx     Real server-backed sign-in
+â”‚   â”‚   â”œâ”€â”€ AdminApp.jsx       Admin shell
+â”‚   â”‚   â”œâ”€â”€ components/
+â”‚   â”‚   â””â”€â”€ pages/             Dashboard, blog, podcasts, resources,
+â”‚   â”‚                         startups, research, analytics
+â”‚   â”‚
+â”‚   â”œâ”€â”€ public/                Visitor-facing site
+â”‚   â”‚   â”œâ”€â”€ PublicApp.jsx      Routes + providers
+â”‚   â”‚   â”œâ”€â”€ AuthContext.jsx    Visitor session (token in localStorage)
+â”‚   â”‚   â”œâ”€â”€ HomePage.jsx, AboutPage.jsx, BlogPage.jsx, PodcastPage.jsx,
+â”‚   â”‚   â”‚   ResourcesPage.jsx, StartupPage.jsx, ResearchPage.jsx,
+â”‚   â”‚   â”‚   WatchlistPage.jsx, SearchResultsPage.jsx, LoginSuccess.jsx
+â”‚   â”‚   â””â”€â”€ components/       Header, Footer, cards, modals, review section
+â”‚   â”‚
+â”‚   â””â”€â”€ shared/
+â”‚       â”œâ”€â”€ services/api.js    Single fetch wrapper + endpoint map
+â”‚       â””â”€â”€ utils/auth.js      Admin session helpers
+â”‚
+â””â”€â”€ server/                    Backend (CommonJS)
+    â”œâ”€â”€ index.js               Express app, middleware, routes, shutdown
+    â”œâ”€â”€ create-admin.js        Seed/promote the admin account
+    â”œâ”€â”€ drop_tables.js         Destructive schema reset (guarded)
+    â”œâ”€â”€ .env.example
+    â”œâ”€â”€ config/
+    â”‚   â”œâ”€â”€ db.config.js       Sequelize instance
+    â”‚   â””â”€â”€ passport.config.js Google OAuth strategy (optional)
+    â”œâ”€â”€ models/                Sequelize models
+    â”œâ”€â”€ controllers/           Request handlers
+    â”œâ”€â”€ routes/                Express routers
+    â””â”€â”€ middleware/
+        â”œâ”€â”€ authJwt.js         verifyToken, isAdmin
+        â””â”€â”€ upload.js          Multer with an extension/type allowlist
 ```
 
 ---
@@ -223,7 +223,7 @@ x-access-token: <jwt>
 
 `Authorization: Bearer <jwt>` is also accepted.
 
-### Public — no authentication
+### Public â€” no authentication
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
@@ -245,7 +245,7 @@ x-access-token: <jwt>
 | `POST` | `/activity` | Record a page-view event. |
 | `GET` | `/api/health` | Health and database-connection check. |
 
-### Visitor — requires a valid token
+### Visitor â€” requires a valid token
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
@@ -256,7 +256,7 @@ x-access-token: <jwt>
 | `POST` | `/watchlist` | Add `{ entityType, entityId }`. |
 | `DELETE` | `/watchlist/:entityType/:entityId` | Remove an item. |
 
-### Admin — requires a token whose user has the `admin` role
+### Admin â€” requires a token whose user has the `admin` role
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
@@ -288,9 +288,9 @@ x-access-token: <jwt>
 
 Two independent sessions share one API:
 
-- **Visitor session** — keys `luk_token` / `luk_user` in `localStorage`.
+- **Visitor session** â€” keys `luk_token` / `luk_user` in `localStorage`.
   Manageable via `AuthContext` in `src/public/`.
-- **Admin session** — keys `luk_admin_token` / `luk_admin_user` in
+- **Admin session** â€” keys `luk_admin_token` / `luk_admin_user` in
   `localStorage`. Managed by `src/shared/utils/auth.js`.
 
 `src/shared/services/api.js` attaches whichever token it finds to every request,
@@ -315,7 +315,7 @@ The API mints a JWT and redirects to:
 The token sits in the URL **fragment**, which browsers never send to the server
 and which therefore never appears in access logs or `Referer` headers.
 `LoginSuccess.jsx` then validates it against `GET /auth/profile` and takes the
-identity from the response — it never trusts any identity data supplied in the
+identity from the response â€” it never trusts any identity data supplied in the
 URL.
 
 ### Security middleware
@@ -325,8 +325,8 @@ Applied in `server/index.js`, in this order:
 | Middleware | Purpose |
 | --- | --- |
 | `helmet()` | Standard security response headers. |
-| Rate limit — 500 req / 15 min | Global, mounted on `/api/`. |
-| Rate limit — 50 req / 15 min | Authentication routes. |
+| Rate limit â€” 500 req / 15 min | Global, mounted on `/api/`. |
+| Rate limit â€” 50 req / 15 min | Authentication routes. |
 | `cors()` | Cross-origin headers. |
 | Body parsers | JSON and URL-encoded, capped at 10 KB each. |
 | `trust proxy` | Set to `1` so `req.ip` is the real client behind a proxy. |
@@ -358,7 +358,7 @@ admin promotes them to `approved` or `rejected`.
 The schema is currently created by `sequelize.sync({ alter: true })` at server
 startup. **`alter: true` performs introspective `ALTER TABLE` on every boot and
 is not safe for production or for concurrent instances.** There are no
-migrations yet — see [Known issues](#known-issues-and-planned-work).
+migrations yet â€” see [Known issues](#known-issues-and-planned-work).
 
 To wipe the schema and start over (development only):
 
@@ -495,7 +495,7 @@ critical ones already fixed. These are **not yet addressed**.
 - **Broken images on the About page.** Team photos point at
   `/api/placeholder/96/96`, which does not exist.
 - **`ResearchPage.jsx` references an undefined `api` import**, so dynamic
-  research projects silently never load — the `ReferenceError` is swallowed by
+  research projects silently never load â€” the `ReferenceError` is swallowed by
   a surrounding `try/catch`.
 - **Contradictory figure caption.** `ResearchPage`'s abstract states
   *Junonia oenone* was the most abundant species while its Figure 1 caption and
@@ -503,7 +503,7 @@ critical ones already fixed. These are **not yet addressed**.
 - **Oversized uncompressed images** with no `loading="lazy"`, no explicit
   dimensions and no responsive variants.
 - **A DevTools blocker in `index.html`.** It disables right-click, `F12` and
-  `Ctrl+S`. This is not a security control — it is trivially bypassed — and
+  `Ctrl+S`. This is not a security control â€” it is trivially bypassed â€” and
   blocking text selection harms accessibility and usability. Remove it.
 - **Accessibility gaps.** Icon-only buttons lack accessible names, modals have
   no `role="dialog"` / focus trap / `Escape` handling, and some interactive
@@ -523,12 +523,12 @@ all with published fixes. Highest-impact direct dependencies to bump:
 
 | Package | Where | Note |
 | --- | --- | --- |
-| `multer` | server | `>= 2.2.0` — 4 DoS advisories. |
-| `express-rate-limit` | server | `>= 8.2.2` — IPv4-mapped IPv6 bypass. |
+| `multer` | server | `>= 2.2.0` â€” 4 DoS advisories. |
+| `express-rate-limit` | server | `>= 8.2.2` â€” IPv4-mapped IPv6 bypass. |
 | `sequelize` | server | Multiple advisories. |
-| `vite` | root | `> 7.3.4` — path traversal / file read in the dev server. |
-| `postcss` | root | `>= 8.5.23` — source map disclosure, XSS. |
-| `react-router-dom` | root | Upgrade past `6.30.5` — open redirect to XSS. |
+| `vite` | root | `> 7.3.4` â€” path traversal / file read in the dev server. |
+| `postcss` | root | `>= 8.5.23` â€” source map disclosure, XSS. |
+| `react-router-dom` | root | Upgrade past `6.30.5` â€” open redirect to XSS. |
 
 Also consider removing the deprecated `xss-clean` and `hpp` packages, and
 aligning `@vitejs/plugin-react` with Vite 7 (it currently declares a peer range

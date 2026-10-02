@@ -9,8 +9,10 @@ if (!SECRET_KEY) {
     process.exit(1);
 }
 
+// Default matches the Vite dev server port in vite.config.js. Without this the
+// post-login redirect pointed at :5173, where nothing is listening.
 const frontendUrl = () =>
-    (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+    (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
 exports.register = async (req, res) => {
     try {
