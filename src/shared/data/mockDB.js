@@ -8,15 +8,7 @@ class MockDB {
       humanResources: JSON.parse(localStorage.getItem('luk_humanResources')) || [],
       startups: JSON.parse(localStorage.getItem('luk_startups')) || [],
       jobs: JSON.parse(localStorage.getItem('luk_jobs')) || [],
-      users: JSON.parse(localStorage.getItem('luk_users')) || [
-        {
-          id: 1,
-          email: 'admin@lukkenya.com',
-          password: 'LUK@Admin2025',
-          role: 'admin',
-          name: 'Admin User'
-        }
-      ]
+      users: JSON.parse(localStorage.getItem('luk_users')) || []
     }
     
     // Initialize with sample data if empty

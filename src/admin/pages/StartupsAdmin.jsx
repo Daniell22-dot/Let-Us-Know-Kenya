@@ -31,10 +31,14 @@ const StartupsAdmin = () => {
   const handleApprove = async (id) => {
     setActionLoading(id + '-approve');
     try {
+      // Use the status the server actually persisted. Hardcoding 'approved'
+      // here previously made the panel look successful even when the write
+      // had failed.
       const updated = await api.approveStartup(id);
-      setStartups(prev => prev.map(s => s.id === id ? { ...s, status: 'approved' } : s));
-    } catch {
-      alert('Failed to approve startup.');
+      setStartups(prev => prev.map(s => s.id === id ? updated : s));
+    } catch (error) {
+      alert(error.message || 'Failed to approve startup.');
+      fetchStartups();
     } finally {
       setActionLoading(null);
     }
@@ -43,10 +47,11 @@ const StartupsAdmin = () => {
   const handleReject = async (id) => {
     setActionLoading(id + '-reject');
     try {
-      await api.rejectStartup(id);
-      setStartups(prev => prev.map(s => s.id === id ? { ...s, status: 'rejected' } : s));
-    } catch {
-      alert('Failed to reject startup.');
+      const updated = await api.rejectStartup(id);
+      setStartups(prev => prev.map(s => s.id === id ? updated : s));
+    } catch (error) {
+      alert(error.message || 'Failed to reject startup.');
+      fetchStartups();
     } finally {
       setActionLoading(null);
     }

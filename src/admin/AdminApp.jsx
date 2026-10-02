@@ -8,15 +8,17 @@ import ResourcesAdmin from './pages/ResourcesAdmin.jsx'
 import StartupsAdmin from './pages/StartupsAdmin.jsx'
 import ResearchAdmin from './pages/ResearchAdmin.jsx'
 import Analytics from './pages/Analytics.jsx'
+import { logout, getCurrentUser } from '../shared/utils/auth'
 import './styles/admin.css'
 
 function AdminApp() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const navigate = useNavigate()
+  const admin = getCurrentUser()
 
   const handleLogout = () => {
-    localStorage.removeItem('luk_admin_token')
-    navigate('/admin')
+    logout()
+    navigate('/admin', { replace: true })
   }
 
   return (
@@ -39,9 +41,9 @@ function AdminApp() {
           </div>
           <div className="header-right">
             <div className="flex items-center gap-3">
-              <span className="admin-email">admin@lukkenya.com</span>
+              <span className="admin-email">{admin?.email || ''}</span>
               <div className="w-10 h-10 bg-[#00a84f] rounded-lg flex items-center justify-center text-white font-bold shadow-md">
-                A
+                {(admin?.name || admin?.username || 'A').charAt(0).toUpperCase()}
               </div>
             </div>
           </div>

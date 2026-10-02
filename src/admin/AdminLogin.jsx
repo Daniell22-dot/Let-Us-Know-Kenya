@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff, Globe, Shield, AlertCircle } from 'lucide-react'
+import { login } from '../shared/utils/auth'
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('')
@@ -10,21 +11,23 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    setTimeout(() => {
-      if (email === 'admin@lukkenya.com' && password === 'LUK@Admin2025') {
-        const token = 'luk_admin_' + Date.now()
-        localStorage.setItem('luk_admin_token', token)
+    try {
+      const result = await login(email, password)
+      if (result.success) {
         navigate('/admin/dashboard')
       } else {
-        setError('Invalid credentials. Use: admin@lukkenya.com / LUK@Admin2025')
+        setError(result.error || 'Sign in failed.')
       }
+    } catch (err) {
+      setError('Could not reach the server. Is the API running?')
+    } finally {
       setLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -115,8 +118,10 @@ const AdminLogin = () => {
             </form>
 
             <div className="mt-6 text-center text-gray-600 text-xs">
-              <p>Demo Credentials:</p>
-              <p className="mt-1 font-mono text-gray-500">admin@lukkenya.com / LUK@Admin2025</p>
+              <p>
+                No account? Run <span className="font-mono">npm run create-admin</span> in
+                the <span className="font-mono">server/</span> directory.
+              </p>
             </div>
           </div>
         </div>

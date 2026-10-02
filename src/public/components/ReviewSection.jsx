@@ -24,6 +24,7 @@ const StarRating = ({ value, onChange, readOnly = false }) => (
 
 const ReviewSection = ({ entityType, entityId }) => {
     const { user, isAuthenticated } = useAuth();
+    const isAdmin = user?.role === 'admin';
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -56,15 +57,21 @@ const ReviewSection = ({ entityType, entityId }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        // The reviews API requires an authenticated user.
+        if (!isAuthenticated) {
+            setError('Please sign in to leave a review.');
+            return;
+        }
+
         if (form.rating === 0) { setError('Please select a rating.'); return; }
         if (!form.comment.trim()) { setError('Please write a comment.'); return; }
         setSubmitting(true);
         try {
-            const authorName = isAuthenticated ? user.username : (form.author.trim() || 'Anonymous');
             const newReview = await api.createReview({
                 entityType,
                 entityId,
-                author: authorName,
+                author: user.username,
                 rating: form.rating,
                 comment: form.comment.trim()
             });
@@ -72,8 +79,8 @@ const ReviewSection = ({ entityType, entityId }) => {
             setForm(prev => ({ ...prev, rating: 0, comment: '' }));
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
-        } catch {
-            setError('Failed to submit review. Please try again.');
+        } catch (err) {
+            setError(err.message || 'Failed to submit review. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -83,8 +90,8 @@ const ReviewSection = ({ entityType, entityId }) => {
         try {
             await api.deleteReview(id);
             setReviews(prev => prev.filter(r => r.id !== id));
-        } catch {
-            // silent
+        } catch (err) {
+            setError(err.message || 'Failed to delete review.');
         }
     };
 
@@ -171,13 +178,19 @@ const ReviewSection = ({ entityType, entityId }) => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <StarRating value={review.rating} readOnly />
-                                    <button
-                                        onClick={() => handleDelete(review.id)}
-                                        className="p-1 text-gray-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                        title="Delete review"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
+                                    {/* Deleting a review is an admin-only API
+                                        operation, so don't offer the control to
+                                        ordinary visitors. */}
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => handleDelete(review.id)}
+                                            className="p-1 text-gray-300 hover:text-red-400 transition-colors"
+                                            title="Delete review"
+                                            aria-label={`Delete review by ${review.author || 'Anonymous'}`}
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>

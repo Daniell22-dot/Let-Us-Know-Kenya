@@ -1,22 +1,41 @@
-node_modules
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables -- never commit real secrets.
+.env.example
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-dist
-build
-.DS_Store
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.local
+
+# Logs
+logs/
 *.log
-package-lock.json 
-package.json
-settings.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / coverage output
+coverage/
+*.tsbuildinfo
+
+# Runtime uploads (user-supplied files)
+server/uploads/
+
+# Editor / OS noise
 .vscode/
 .idea/
 *.iml
-coverage/
-*.tsbuildinfo
-# Research folder
-research/
-node_modules/
-
+*.swp
+.DS_Store
+Thumbs.db
