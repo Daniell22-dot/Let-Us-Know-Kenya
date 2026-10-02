@@ -6,9 +6,10 @@ const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const xss = require('xss-clean');
 const db = require('./models');
 const passport = require('./config/passport.config');
+const sanitizeRequest = require('./middleware/sanitize');
+const hppGuard = require('./middleware/hppGuard');
 
 const app = express();
 
@@ -22,9 +23,12 @@ const UPLOAD_DIR = path.join(__dirname, 'uploads');
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // Security Middlewares
-app.use(helmet()); // Set security headers
-app.use(xss());    // Clean user input from XSS
-app.use(require('./middleware/hppGuard')); // Prevent HTTP Parameter Pollution
+// Express 5 rebuilds req.query on every access, so query-string sanitisation has
+// to happen inside the parser rather than in a middleware.
+app.set('query parser', sanitizeRequest.buildQueryParser());
+app.use(helmet());           // Set security headers
+app.use(sanitizeRequest);  // Escape user input in body and route params
+app.use(hppGuard);           // Prevent HTTP Parameter Pollution
 
 // Rate Limiting
 const globalLimiter = rateLimit({
