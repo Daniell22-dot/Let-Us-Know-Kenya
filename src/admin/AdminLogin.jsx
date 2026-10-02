@@ -79,7 +79,7 @@ const AdminLogin = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:border-[#00a84f] focus:ring-2 focus:ring-[#00a84f]/20 outline-none transition-all text-sm"
-                    placeholder="admin@lukkenya.com"
+                    placeholder="Admin email address"
                     required
                   />
                 </div>
