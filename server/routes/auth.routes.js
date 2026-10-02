@@ -10,6 +10,9 @@ const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:3000').repla
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 router.get("/profile", verifyToken, authController.getProfile);
+// Admin-only account audit and role management.
+router.get("/users", verifyToken, isAdmin, authController.getUsers);
+router.put("/users/:id/role", verifyToken, isAdmin, authController.updateUserRole);
 
 // Google OAuth. Both routes 404 as JSON when Google OAuth is not configured,
 // because passport.config.js only registers the strategy if credentials exist.

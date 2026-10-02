@@ -22,12 +22,31 @@ exports.log = async (req, res) => {
 
 exports.findAll = async (req, res) => {
     try {
+        const { Op } = require('sequelize');
+
+        // Bounded so a large audit table cannot be pulled into memory in one go.
+        const limit = Math.min(Number(req.query.limit) || 200, 1000);
+        const where = {};
+
+        if (req.query.action) where.action = req.query.action;
+
+        const term = (req.query.search || '').trim();
+        if (term) {
+            where[Op.or] = [
+                { action: { [Op.iLike]: `%${term}%` } },
+                { details: { [Op.iLike]: `%${term}%` } },
+                { pageUrl: { [Op.iLike]: `%${term}%` } }
+            ];
+        }
+
         const logs = await ActivityLog.findAll({
+            where,
             order: [['createdAt', 'DESC']],
-            limit: 100
+            limit
         });
         res.status(200).send(logs);
     } catch (error) {
+        console.error("Activity read error:", error);
         res.status(500).send({ message: error.message });
     }
 };

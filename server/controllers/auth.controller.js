@@ -155,6 +155,69 @@ exports.getProfile = async (req, res) => {
     }
 };
 
+// Admin audit view of every registered account. Excludes the password column
+// explicitly rather than relying on the client to ignore it.
+exports.getUsers = async (req, res) => {
+    try {
+        const { Op } = require('sequelize');
+        const where = {};
+
+        // Optional role filter, e.g. /auth/users?role=admin
+        if (req.query.role) where.role = req.query.role;
+
+        // Optional search across username, name and email.
+        const term = (req.query.search || '').trim();
+        if (term) {
+            where[Op.or] = [
+                { username: { [Op.iLike]: `%${term}%` } },
+                { name: { [Op.iLike]: `%${term}%` } },
+                { email: { [Op.iLike]: `%${term}%` } }
+            ];
+        }
+
+        const users = await User.findAll({
+            where,
+            attributes: { exclude: ['password'] },
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.status(200).send(users);
+    } catch (error) {
+        console.error("Admin user list error:", error);
+        res.status(500).send({ message: error.message || "An error occurred fetching users." });
+    }
+};
+
+// Promote or demote an account. Used to revoke admin rights without deleting
+// the user and losing their content attribution.
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { role } = req.body;
+        if (!['user', 'admin'].includes(role)) {
+            return res.status(400).send({ message: "Role must be either 'user' or 'admin'." });
+        }
+
+        const user = await User.findByPk(req.params.id);
+        if (!user) return res.status(404).send({ message: "User not found." });
+
+        // Guard against an admin locking every administrator out of the panel.
+        if (user.role === 'admin' && role !== 'admin') {
+            const remaining = await User.count({ where: { role: 'admin' } });
+            if (remaining <= 1) {
+                return res.status(400).send({
+                    message: "This is the only admin account. Promote another user before demoting this one."
+                });
+            }
+        }
+
+        await user.update({ role });
+        res.status(200).send({ id: user.id, username: user.username, email: user.email, role: user.role });
+    } catch (error) {
+        console.error("Admin role update error:", error);
+        res.status(500).send({ message: error.message || "An error occurred updating the role." });
+    }
+};
+
 // Original file upload function moved from the old auth controller
 exports.uploadFile = (req, res) => {
     if (!req.file) {

@@ -1,131 +1,148 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Headphones, BookOpen, TrendingUp, ArrowUpRight, Briefcase } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+    BookOpen, Headphones, Briefcase, Map, FolderKanban, Star,
+    Users, Mail, AlertTriangle, ArrowUpRight, LayoutDashboard
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../../shared/services/api';
 
-const DashboardStats = () => {
-  const [counts, setCounts] = useState({ blogs: 0, podcasts: 0, startups: 0, resources: 0 });
-  const [loading, setLoading] = useState(true);
+/**
+ * Dashboard overview.
+ *
+ * The previous version displayed hardcoded growth figures ("+12.5%", "+8.2%")
+ * and a decorative bar chart that were not connected to any data. Those numbers
+ * looked like real metrics to anyone reading the screen, which is worse than
+ * showing nothing. Everything here is now counted from the live API, and the
+ * chart is replaced by a queue of items that genuinely need an admin decision.
+ */
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [blogs, podcasts, startups, resources] = await Promise.all([
-          api.getBlogs().catch(() => []),
-          api.getPodcasts().catch(() => []),
-          api.getStartups().catch(() => []),
-          api.getResources().catch(() => [])
-        ]);
+const StatCard = ({ label, value, icon: Icon, to, tone = 'from-[#1e293b] to-[#0f172a]' }) => (
+    <Link
+        to={to}
+        className="bg-white p-5 rounded-lg shadow-md border border-gray-200 hover:shadow-lg hover:border-[#00a84f]/40 transition-all group"
+    >
+        <div className="flex items-center justify-between">
+            <div className={`w-11 h-11 bg-gradient-to-br ${tone} rounded-lg flex items-center justify-center text-white shadow-md`}>
+                <Icon size={20} />
+            </div>
+            <ArrowUpRight size={16} className="text-gray-300 group-hover:text-[#00a84f] transition-colors" />
+        </div>
+        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-4">{label}</p>
+        <p className="text-3xl font-bold text-[#1e293b] mt-0.5">{value.toLocaleString()}</p>
+    </Link>
+);
 
-        setCounts({
-          blogs: blogs.length,
-          podcasts: podcasts.length,
-          startups: startups.length,
-          resources: resources.length
-        });
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setLoading(false);
-      }
+const QueueItem = ({ count, label, to, tone = 'amber' }) => {
+    if (!count) return null;
+    const tones = {
+        amber: 'border-amber-200 bg-amber-50 text-amber-800',
+        red: 'border-red-200 bg-red-50 text-red-700'
     };
-    fetchStats();
-  }, []);
+    return (
+        <Link to={to} className={`flex items-center justify-between gap-3 border rounded-lg px-4 py-3 text-sm font-semibold transition-transform hover:-translate-y-0.5 ${tones[tone]}`}>
+            <span>{count} {label}</span>
+            <ArrowUpRight size={15} />
+        </Link>
+    );
+};
 
-  const stats = [
-    {
-      label: 'Blog Articles',
-      value: counts.blogs,
-      change: '+12.5%',
-      icon: <BookOpen />,
-      color: 'from-[#000000] to-[#1a1a1a]'
-    },
-    {
-      label: 'Podcasts',
-      value: counts.podcasts,
-      change: '+8.2%',
-      icon: <Headphones />,
-      color: 'from-[#bf2f38] to-[#a02830]'
-    },
-    {
-      label: 'Startups',
-      value: counts.startups,
-      change: '+15.3%',
-      icon: <Briefcase />,
-      color: 'from-[#00853e] to-[#006b31]'
-    },
-    {
-      label: 'Resources',
-      value: counts.resources,
-      change: '+5.7%',
-      icon: <TrendingUp />,
-      color: 'from-[#000000] to-[#00853e]'
-    },
-  ];
+const DashboardStats = () => {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-[#1e293b]">
-          Dashboard Overview
-        </h2>
-        <div className="flex gap-2">
-          <select className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#00a84f]">
-            <option>All Time</option>
-            <option>Last 30 Days</option>
-            <option>This Year</option>
-          </select>
-        </div>
-      </div>
+    useEffect(() => {
+        let cancelled = false;
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br opacity-5 rounded-bl-full -mr-8 -mt-8 group-hover:scale-110 transition-transform duration-500"></div>
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center text-white shadow-md`}>
-                {stat.icon}
-              </div>
-              <span className="flex items-center gap-1 text-xs font-medium text-[#00a84f] bg-[#00a84f]/10 px-2 py-1 rounded-full">
-                {stat.change} <ArrowUpRight size={12} />
-              </span>
+        // Each fetch is allowed to fail on its own so one unreachable endpoint
+        // cannot blank the whole dashboard.
+        const safe = (promise) => promise.then((d) => (Array.isArray(d) ? d : [])).catch(() => []);
+
+        (async () => {
+            const [blogs, podcasts, resources, startups, jobs, projects, reviews, subscribers] = await Promise.all([
+                safe(api.getBlogs()),
+                safe(api.getPodcasts()),
+                safe(api.getResources()),
+                safe(api.getStartups()),
+                safe(api.getJobs()),
+                safe(api.getProjects()),
+                safe(api.getReviews()),
+                safe(api.getSubscribers())
+            ]);
+
+            if (cancelled) return;
+
+            setStats({
+                blogs, podcasts, resources, startups, jobs, projects, reviews, subscribers
+            });
+            setLoading(false);
+        })();
+
+        return () => { cancelled = true; };
+    }, []);
+
+    const cards = [
+        { label: 'Blog posts', value: stats?.blogs.length, icon: BookOpen, to: '/admin/dashboard/blog' },
+        { label: 'Podcasts', value: stats?.podcasts.length, icon: Headphones, to: '/admin/dashboard/podcasts' },
+        { label: 'Resources', value: stats?.resources.length, icon: Map, to: '/admin/dashboard/resources' },
+        { label: 'Startups', value: stats?.startups.length, icon: Briefcase, to: '/admin/dashboard/startups', tone: 'from-[#00a84f] to-[#007a38]' },
+        { label: 'Projects', value: stats?.projects.length, icon: FolderKanban, to: '/admin/dashboard/projects' },
+        { label: 'Jobs', value: stats?.jobs.length, icon: Briefcase, to: '/admin/dashboard/jobs', tone: 'from-[#c41e3a] to-[#9c1729]' },
+        { label: 'Reviews', value: stats?.reviews.length, icon: Star, to: '/admin/dashboard/reviews', tone: 'from-[#c41e3a] to-[#9c1729]' },
+        { label: 'Subscribers', value: stats?.subscribers.length, icon: Mail, to: '/admin/dashboard/subscribers', tone: 'from-[#00a84f] to-[#007a38]' }
+    ].filter((c) => c.value !== undefined);
+
+    // Items genuinely awaiting an admin decision.
+    const pendingBlogs = (stats?.blogs || []).filter((b) => b.status === 'pending' || b.status === 'draft').length;
+    const pendingStartups = (stats?.startups || []).filter((s) => s.status === 'pending').length;
+    const pendingProjects = (stats?.projects || []).filter((p) => p.status === 'pending').length;
+    const queue = pendingBlogs + pendingStartups + pendingProjects;
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-2xl font-bold text-[#1e293b] flex items-center gap-3">
+                    <LayoutDashboard size={24} className="text-[#00a84f]" />
+                    Dashboard Overview
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                    Live counts across every content type, plus anything waiting for review.
+                </p>
             </div>
-            <p className="text-gray-500 text-sm font-medium relative z-10">{stat.label}</p>
-            <h3 className="text-3xl font-bold text-gray-900 mt-1 relative z-10">
-              {loading ? (
-                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
-              ) : (
-                stat.value.toLocaleString()
-              )}
-            </h3>
-          </div>
-        ))}
-      </div>
 
-      {/* Chart Placeholder */}
-      <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200 h-80 flex flex-col items-center justify-center">
-        <div className="w-20 h-20 bg-[#00a84f]/10 rounded-lg flex items-center justify-center mb-4">
-          <TrendingUp className="text-[#00a84f]" size={36} />
-        </div>
-        <h4 className="text-gray-700 font-semibold text-lg mb-2">Analytics Chart</h4>
-        <p className="text-gray-400 text-sm max-w-xs text-center">
-          Detailed analytics visualization will appear here once data integration is complete.
-        </p>
+            {loading ? (
+                <div className="h-40 flex items-center justify-center text-gray-400">
+                    <div className="w-8 h-8 border-4 border-gray-200 border-t-[#00a84f] rounded-full animate-spin" />
+                </div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {cards.map((card) => (
+                            <StatCard key={card.label} {...card} />
+                        ))}
+                    </div>
 
-        {/* Mini Chart Preview */}
-        <div className="flex items-end gap-3 mt-6">
-          {[45, 60, 35, 70, 55, 80, 65].map((height, i) => (
-            <div key={i} className="flex flex-col items-center gap-2">
-              <div
-                className="w-3 bg-[#00a84f] rounded-t"
-                style={{ height: `${height / 2}px` }}
-              ></div>
-              <span className="text-xs text-gray-400">M{i + 1}</span>
-            </div>
-          ))}
+                    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <AlertTriangle size={18} className={queue ? 'text-amber-500' : 'text-[#00a84f]'} />
+                            <h3 className="font-bold text-[#1e293b]">Needs attention</h3>
+                        </div>
+                        {queue === 0 ? (
+                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                                <span className="inline-block w-2 h-2 rounded-full bg-[#00a84f]" />
+                                Nothing is waiting for review. All content is published.
+                            </p>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <QueueItem count={pendingBlogs} label="blog posts awaiting publish" to="/admin/dashboard/blog" />
+                                <QueueItem count={pendingStartups} label="startups awaiting approval" to="/admin/dashboard/startups" />
+                                <QueueItem count={pendingProjects} label="projects awaiting publish" to="/admin/dashboard/projects" />
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default DashboardStats;

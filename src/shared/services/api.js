@@ -122,6 +122,9 @@ const api = {
 
     // ─── Jobs ─────────────────────────────────────────────────────────────────
     getJobs: () => request('/jobs'),
+    createJob: (data) => request('/jobs', { method: 'POST', body: data, auth: true }),
+    updateJob: (id, data) => request(`/jobs/${id}`, { method: 'PUT', body: data, auth: true }),
+    deleteJob: (id) => request(`/jobs/${id}`, { method: 'DELETE', auth: true }),
 
     // ─── Reviews ─────────────────────────────────────────────────────────────
     getReviews: (entityType, entityId) =>
@@ -155,6 +158,14 @@ const api = {
     // ─── Newsletter ───────────────────────────────────────────────────────────
     subscribeToNewsletter: (email) =>
         request('/newsletter/subscribe', { method: 'POST', body: { email } }),
+
+    // ─── Admin audit endpoints (all admin-only server side) ────────────────────
+    getUsers: (params) => request(`/auth/users${qs(params || {})}`, { auth: true }),
+    updateUserRole: (id, role) =>
+        request(`/auth/users/${id}/role`, { method: 'PUT', body: { role }, auth: true }),
+    getSubscribers: (params) => request(`/newsletter/subscribers${qs(params || {})}`, { auth: true }),
+    deleteSubscriber: (id) => request(`/newsletter/subscribers/${id}`, { method: 'DELETE', auth: true }),
+    getActivity: (params) => request(`/activity${qs(params || {})}`, { auth: true }),
 
     // ─── Projects ─────────────────────────────────────────────────────────────
     getProjects: () => request('/projects'),

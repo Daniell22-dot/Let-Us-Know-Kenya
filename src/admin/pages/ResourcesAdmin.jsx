@@ -1,255 +1,216 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, MapPin, Coffee, Users, Mountain, Wifi, X, Save, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { MapPin, Star, Filter } from 'lucide-react';
 import api from '../../shared/services/api';
+import { StatusBadge } from '../components/ContentTable';
+import ContentTable, { ConfirmDialog } from '../components/ContentTable';
+import ResourceForm from '../components/ResourceForm';
+import { PageHeader, AddButton } from '../components/AdminUI';
+import { RESOURCE_CATEGORIES } from '../../shared/data/constants';
+import { countyNames } from '../../shared/data/kenyaCounties';
 
-const RESOURCE_TYPES = ['natural', 'human'];
-const NAT_CATEGORIES = ['agriculture', 'wildlife', 'energy', 'water', 'forest', 'mineral'];
-const HUM_CATEGORIES = ['talent', 'education', 'healthcare', 'tourism', 'technology'];
-const REGIONS = ['Nairobi', 'Coast', 'Rift Valley', 'Western', 'Nyanza', 'Central', 'Eastern', 'North Eastern'];
-
-const emptyForm = () => ({ name: '', type: 'natural', region: '', category: '', description: '', economicValue: '', conservationStatus: '', tourismPotential: '' });
-
-const getCategoryIcon = (cat) => {
-  const icons = { agriculture: <Coffee size={20} />, wildlife: <Mountain size={20} />, energy: <Wifi size={20} />, talent: <Users size={20} /> };
-  return icons[cat?.toLowerCase()] || <MapPin size={20} />;
-};
+const ALL = 'All';
 
 const ResourcesAdmin = () => {
-  const [naturalResources, setNaturalResources] = React.useState([]);
-  const [humanResources, setHumanResources] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [activeTab, setActiveTab] = useState('natural');
-  const [showModal, setShowModal] = useState(false);
-  const [editingResource, setEditingResource] = useState(null);
-  const [form, setForm] = useState(emptyForm());
-  const [saving, setSaving] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [error, setError] = useState('');
+    const [resources, setResources] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [county, setCounty] = useState(ALL);
+    const [category, setCategory] = useState(ALL);
+    const [formOpen, setFormOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const [onlyFeatured, setOnlyFeatured] = useState(false);
 
-  React.useEffect(() => {
-    fetchResources();
-  }, []);
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const data = await api.getResources();
+                if (!cancelled) setResources(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching resources:', error);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
-  const fetchResources = async () => {
-    try {
-      const data = await api.getResources();
-      setNaturalResources(data.filter(r => r.type === 'natural'));
-      setHumanResources(data.filter(r => r.type === 'human'));
-    } catch (error) {
-      console.error('Error fetching resources:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Derive the filter lists from the data itself. Hardcoding them meant options
+    // drifted out of step with what was actually stored.
+    const categories = useMemo(() => {
+        const set = new Set();
+        resources.forEach((r) => r.category && set.add(r.category));
+        return [...set].sort();
+    }, [resources]);
 
-  const listData = activeTab === 'natural' ? naturalResources : humanResources;
-  const setListData = activeTab === 'natural' ? setNaturalResources : setHumanResources;
+    const visible = useMemo(() => resources.filter((r) => {
+        if (county !== ALL && r.region !== county) return false;
+        if (category !== ALL && r.category !== category) return false;
+        if (onlyFeatured && !r.featured) return false;
+        return true;
+    }), [resources, county, category, onlyFeatured]);
 
-  const openNew = () => {
-    setEditingResource(null);
-    setForm({ ...emptyForm(), type: activeTab });
-    setError('');
-    setShowModal(true);
-  };
+    const openNew = () => { setEditing(null); setFormError(''); setFormOpen(true); };
+    const openEdit = (resource) => { setEditing(resource); setFormError(''); setFormOpen(true); };
 
-  const openEdit = (resource) => {
-    setEditingResource(resource);
-    setForm({
-      name: resource.name || '',
-      type: resource.type || 'natural',
-      region: resource.region || '',
-      category: resource.category || '',
-      description: resource.description || '',
-      economicValue: resource.economicValue || '',
-      conservationStatus: resource.conservationStatus || '',
-      tourismPotential: resource.tourismPotential || ''
-    });
-    setError('');
-    setShowModal(true);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (!form.name.trim()) { setError('Name is required.'); return; }
-    setSaving(true);
-    try {
-      if (editingResource) {
-        const updated = await api.updateResource(editingResource.id, form);
-        if (updated.type === 'natural') {
-          setNaturalResources(prev => prev.map(r => r.id === editingResource.id ? updated : r));
-          setHumanResources(prev => prev.filter(r => r.id !== editingResource.id));
-        } else {
-          setHumanResources(prev => prev.map(r => r.id === editingResource.id ? updated : r));
-          setNaturalResources(prev => prev.filter(r => r.id !== editingResource.id));
+    const handleSave = async (form) => {
+        setFormError('');
+        if (!form.name || !form.name.trim()) {
+            setFormError('Name is required.');
+            return;
         }
-      } else {
-        const created = await api.createResource(form);
-        if (created.type === 'natural') setNaturalResources(prev => [created, ...prev]);
-        else setHumanResources(prev => [created, ...prev]);
-      }
-      setShowModal(false);
-    } catch {
-      setError('Failed to save. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
+        setSaving(true);
+        try {
+            if (editing) {
+                const updated = await api.updateResource(editing.id, form);
+                setResources((prev) => prev.map((r) => (r.id === editing.id ? { ...r, ...updated } : r)));
+            } else {
+                const created = await api.createResource(form);
+                setResources((prev) => [{ ...form, ...created }, ...prev]);
+            }
+            setFormOpen(false);
+        } catch (err) {
+            setFormError(err.message || 'Failed to save. Please try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.deleteResource(id);
-      setNaturalResources(prev => prev.filter(r => r.id !== id));
-      setHumanResources(prev => prev.filter(r => r.id !== id));
-      setDeleteConfirm(null);
-    } catch {
-      alert('Failed to delete resource.');
-    }
-  };
+    const toggleFeatured = async (resource) => {
+        const next = !resource.featured;
+        setResources((prev) => prev.map((r) => (r.id === resource.id ? { ...r, featured: next } : r)));
+        try {
+            await api.updateResource(resource.id, { featured: next });
+        } catch (err) {
+            setResources((prev) => prev.map((r) => (r.id === resource.id ? { ...r, featured: !next } : r)));
+            console.error('Failed to update featured flag:', err);
+        }
+    };
 
-  const field = (key) => ({ value: form[key], onChange: e => setForm(f => ({ ...f, [key]: e.target.value })) });
-  const cats = form.type === 'natural' ? NAT_CATEGORIES : HUM_CATEGORIES;
+    const handleDelete = async (resource) => {
+        setDeleting(true);
+        try {
+            await api.deleteResource(resource.id);
+            setResources((prev) => prev.filter((r) => r.id !== resource.id));
+            setDeleteTarget(null);
+        } catch (err) {
+            console.error('Failed to delete resource:', err);
+        } finally {
+            setDeleting(false);
+        }
+    };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-          {['natural', 'human'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === tab ? 'bg-[#00a84f] text-white shadow-md' : 'text-gray-500 hover:text-[#00a84f]'}`}>
-              {tab === 'natural' ? 'Natural Resources' : 'Human Resources'}
-            </button>
-          ))}
+    const columns = [
+        {
+            key: 'name',
+            header: 'Resource',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <span className="font-semibold text-[#1e293b]">{row.name}</span>
+                    {row.featured && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#c41e3a] bg-[#c41e3a]/10 px-2 py-0.5 rounded-full">
+                            <Star size={11} fill="currentColor" /> Featured
+                        </span>
+                    )}
+                    {row.geonameId && (
+                        <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded" title="Generated from an external source">
+                            {row.geonameId.startsWith('curated:') ? 'curated' : 'imported'}
+                        </span>
+                    )}
+                </div>
+            )
+        },
+        { key: 'region', header: 'County', render: (row) => (
+            <span className="inline-flex items-center gap-1 text-gray-600">
+                <MapPin size={13} className="text-[#00a84f]" /> {row.region || '—'}
+            </span>
+        ) },
+        { key: 'category', header: 'Category', render: (row) => <StatusBadge value={row.category} /> },
+        { key: 'type', header: 'Type', className: 'text-gray-500' }
+    ];
+
+    const validCategories = RESOURCE_CATEGORIES.natural;
+
+    return (
+        <div className="space-y-6">
+            <PageHeader
+                title="Resources"
+                description="Every natural resource on the platform, grouped by county. Featured resources are highlighted on the public Resources page."
+                count={visible.length}
+            >
+                <AddButton onClick={openNew}>Add Resource</AddButton>
+            </PageHeader>
+
+            {/* Category health: flags imported records sitting outside the taxonomy. */}
+            {(() => {
+                const stray = categories.filter((c) => !validCategories.includes(c));
+                if (stray.length === 0) return null;
+                return (
+                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <Filter size={16} className="mt-0.5 shrink-0" />
+                        <p>
+                            <span className="font-semibold">{stray.length} categor{stray.length === 1 ? 'y' : 'ies'} outside the standard taxonomy:</span>{' '}
+                            {stray.join(', ')}. These will not appear in the public Resources filters.
+                        </p>
+                    </div>
+                );
+            })()}
+
+            <ContentTable
+                columns={columns}
+                rows={visible}
+                loading={loading}
+                pageSize={25}
+                emptyIcon={MapPin}
+                emptyTitle="No resources yet"
+                emptyHint="Add a resource, or run the seeder to load the Kenya dataset."
+                filters={{
+                    search,
+                    onSearch: setSearch,
+                    searchPlaceholder: 'Search resources, counties, categories...',
+                    options: [
+                        { key: 'county', value: county, onChange: setCounty, options: [ALL, ...countyNames] },
+                        { key: 'category', value: category, onChange: setCategory, options: [ALL, ...categories] }
+                    ]
+                }}
+                actions={{
+                    onEdit: openEdit,
+                    onDelete: (row) => setDeleteTarget(row),
+                    extra: [
+                        {
+                            key: 'featured',
+                            title: resource => (resource.featured ? 'Remove from featured' : 'Mark as featured'),
+                            icon: <Star size={16} />,
+                            className: 'border-gray-200 text-gray-400 hover:text-[#c41e3a] hover:bg-[#c41e3a]/10',
+                            onClick: toggleFeatured
+                        }
+                    ]
+                }}
+            />
+
+            <ResourceForm
+                open={formOpen}
+                resource={editing}
+                onClose={() => setFormOpen(false)}
+                onSave={handleSave}
+                saving={saving}
+                error={formError}
+            />
+
+            <ConfirmDialog
+                open={!!deleteTarget}
+                title="Delete resource"
+                message={`This permanently removes "${deleteTarget?.name || ''}". This cannot be undone.`}
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteTarget(null)}
+                busy={deleting}
+            />
         </div>
-        <button onClick={openNew} className="bg-[#00a84f] text-white px-6 py-3 rounded-lg font-bold hover:shadow-lg transform hover:-translate-y-1 transition-all flex items-center gap-2">
-          <Plus size={20} /> Add Resource
-        </button>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-        <div className="h-1 bg-[#00a84f]" />
-        <div className="divide-y divide-gray-200">
-          {loading ? (
-            <div className="p-12 text-center text-gray-500">
-              <div className="flex justify-center items-center gap-2">
-                <div className="w-5 h-5 border-2 border-[#00a84f] border-t-transparent rounded-full animate-spin" />
-                Fetching resources...
-              </div>
-            </div>
-          ) : listData.length > 0 ? listData.map((resource) => (
-            <div key={resource.id} className="p-6 flex items-center justify-between hover:bg-[#00a84f]/5 transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-lg flex items-center justify-center bg-[#00a84f]/10">
-                  <span className="text-[#00a84f]">
-                    {activeTab === 'natural' ? getCategoryIcon(resource.category) : <Users size={24} />}
-                  </span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg">{resource.name}</h4>
-                  <div className="flex items-center gap-3 text-sm mt-1">
-                    <span className="flex items-center gap-1 text-[#00a84f]"><MapPin size={14} /> {resource.region}</span>
-                    <span className="text-gray-300">•</span>
-                    <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-[#00a84f]/10 text-[#00a84f]">{resource.category}</span>
-                  </div>
-                  {resource.description && <p className="text-gray-500 text-sm mt-1 max-w-md line-clamp-1">{resource.description}</p>}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => openEdit(resource)} className="p-2 text-gray-400 hover:text-[#00a84f] hover:bg-[#00a84f]/10 border border-gray-200 rounded-lg transition-all"><Edit2 size={18} /></button>
-                <button onClick={() => setDeleteConfirm(resource.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 border border-gray-200 rounded-lg transition-all"><Trash2 size={18} /></button>
-              </div>
-            </div>
-          )) : (
-            <div className="p-12 text-center text-gray-500">No {activeTab} resources found.</div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-xl">
-              <h3 className="text-lg font-bold text-[#1e293b]">{editingResource ? 'Edit Resource' : 'Add Resource'}</h3>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
-            </div>
-            <form onSubmit={handleSave} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Name *</label>
-                  <input {...field('name')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none" placeholder="Resource name" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Type</label>
-                  <select {...field('type')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none">
-                    {RESOURCE_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
-                  <select {...field('category')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none">
-                    <option value="">Select category</option>
-                    {cats.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Region</label>
-                  <select {...field('region')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none">
-                    <option value="">Select region</option>
-                    {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Economic Value</label>
-                  <input {...field('economicValue')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none" placeholder="e.g. High" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Conservation Status</label>
-                  <input {...field('conservationStatus')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none" placeholder="e.g. Protected" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Tourism Potential</label>
-                  <input {...field('tourismPotential')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none" placeholder="e.g. High" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
-                  <textarea {...field('description')} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#00a84f] outline-none resize-none" placeholder="Resource description..." />
-                </div>
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={saving} className="px-5 py-2.5 bg-[#00a84f] text-white rounded-lg text-sm font-semibold hover:bg-[#00953f] flex items-center gap-2 disabled:opacity-60">
-                  <Save size={15} /> {saving ? 'Saving...' : (editingResource ? 'Update Resource' : 'Add Resource')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle size={20} className="text-red-500" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">Delete Resource</h3>
-                <p className="text-sm text-gray-500">This action cannot be undone.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-              <button onClick={() => handleDelete(deleteConfirm)} className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600">Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default ResourcesAdmin;
