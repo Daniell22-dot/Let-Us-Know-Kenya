@@ -81,12 +81,12 @@ psql -U postgres -c "CREATE DATABASE luk_kenya;"
 Two terminals:
 
 ```bash
-# Terminal 1 â€” API on http://localhost:5000
+# Terminal 1 - API on http://localhost:5000
 cd server && npm run dev
 ```
 
 ```bash
-# Terminal 2 â€” frontend on http://localhost:3000
+# Terminal 2 - frontend on http://localhost:3000
 npm run dev
 ```
 
