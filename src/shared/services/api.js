@@ -1,283 +1,175 @@
-const BASE_URL = 'http://localhost:5000/api/v1';
-const OLD_BASE_URL = 'http://localhost:5000/api'; // Fallback support if needed
+// Relative by default so requests are same-origin. In development Vite proxies
+// /api to the API server (see vite.config.js); in production the app can be
+// served behind the same host. The previous hardcoded
+// 'http://localhost:5000/api/v1' bypassed that proxy, made CORS load-bearing on
+// every single request, and made the app impossible to deploy anywhere.
+const BASE_URL = `${import.meta.env.VITE_API_URL || ''}/api/v1`.replace(/\/+$/, '');
+
+// Token keys. `luk_token` is the public visitor session; `luk_admin_token` is
+// the admin panel session. Both are read so any authenticated call is
+// authorised without every caller having to remember the header.
+const TOKEN_KEYS = ['luk_admin_token', 'luk_token'];
+
+const getToken = () => {
+    for (const key of TOKEN_KEYS) {
+        const value = localStorage.getItem(key);
+        if (value) return value;
+    }
+    return null;
+};
+
+export class ApiError extends Error {
+    constructor(message, status, body) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+        this.body = body;
+    }
+}
+
+/**
+ * Single fetch wrapper: attaches the auth token, enforces a timeout, and
+ * normalises error handling. Replaces ~26 hand-rolled copies of this logic.
+ */
+const request = async (path, { method = 'GET', body, auth = false, headers = {} } = {}) => {
+    const token = getToken();
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
+    const requestHeaders = { ...headers };
+    if (token) requestHeaders['x-access-token'] = token;
+    // Let the browser set the multipart Content-Type so the boundary is correct.
+    if (body !== undefined && !isFormData) requestHeaders['Content-Type'] = 'application/json';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    let response;
+    try {
+        response = await fetch(`${BASE_URL}${path}`, {
+            method,
+            headers: requestHeaders,
+            signal: controller.signal,
+            ...(body === undefined ? {} : { body: isFormData ? body : JSON.stringify(body) })
+        });
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            throw new ApiError('Request timed out. Please try again.', 0, null);
+        }
+        throw new ApiError('Could not reach the server. Is the API running?', 0, null);
+    } finally {
+        clearTimeout(timeout);
+    }
+
+    // 204 and other empty responses have no body to parse.
+    const text = await response.text();
+    let data = null;
+    if (text) {
+        try {
+            data = JSON.parse(text);
+        } catch (_) {
+            data = text;
+        }
+    }
+
+    if (!response.ok) {
+        const message =
+            (data && data.message) ||
+            (auth && response.status === 401 ? 'Your session has expired. Please sign in again.' : null) ||
+            `Request failed (${response.status})`;
+        throw new ApiError(message, response.status, data);
+    }
+
+    return data;
+};
+
+const qs = (params) => {
+    const search = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    ).toString();
+    return search ? `?${search}` : '';
+};
 
 const api = {
     // ─── Blogs ───────────────────────────────────────────────────────────────
-    getBlogs: async () => {
-        const response = await fetch(`${BASE_URL}/blogs`);
-        if (!response.ok) throw new Error('Failed to fetch blogs');
-        return response.json();
-    },
-    createBlog: async (data) => {
-        const response = await fetch(`${BASE_URL}/blogs`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to create blog');
-        return response.json();
-    },
-    updateBlog: async (id, data) => {
-        const response = await fetch(`${BASE_URL}/blogs/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to update blog');
-        return response.json();
-    },
-    deleteBlog: async (id) => {
-        const response = await fetch(`${BASE_URL}/blogs/${id}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error('Failed to delete blog');
-        return response.json();
-    },
-    voteBlog: async (id, type) => {
-        const response = await fetch(`${BASE_URL}/blogs/${id}/vote`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type })
-        });
-        if (!response.ok) throw new Error('Failed to vote on blog');
-        return response.json();
-    },
+    getBlogs: (params) => request(`/blogs${qs(params || {})}`),
+    createBlog: (data) => request('/blogs', { method: 'POST', body: data, auth: true }),
+    updateBlog: (id, data) => request(`/blogs/${id}`, { method: 'PUT', body: data, auth: true }),
+    deleteBlog: (id) => request(`/blogs/${id}`, { method: 'DELETE', auth: true }),
+    voteBlog: (id, type) => request(`/blogs/${id}/vote`, { method: 'POST', body: { type }, auth: true }),
 
     // ─── Podcasts ─────────────────────────────────────────────────────────────
-    getPodcasts: async () => {
-        const response = await fetch(`${BASE_URL}/podcasts`);
-        if (!response.ok) throw new Error('Failed to fetch podcasts');
-        return response.json();
-    },
-    createPodcast: async (data) => {
-        const response = await fetch(`${BASE_URL}/podcasts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to create podcast');
-        return response.json();
-    },
-    updatePodcast: async (id, data) => {
-        const response = await fetch(`${BASE_URL}/podcasts/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to update podcast');
-        return response.json();
-    },
-    deletePodcast: async (id) => {
-        const response = await fetch(`${BASE_URL}/podcasts/${id}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error('Failed to delete podcast');
-        return response.json();
-    },
+    getPodcasts: () => request('/podcasts'),
+    createPodcast: (data) => request('/podcasts', { method: 'POST', body: data, auth: true }),
+    updatePodcast: (id, data) => request(`/podcasts/${id}`, { method: 'PUT', body: data, auth: true }),
+    deletePodcast: (id) => request(`/podcasts/${id}`, { method: 'DELETE', auth: true }),
 
     // ─── Resources ───────────────────────────────────────────────────────────
-    getResources: async () => {
-        const response = await fetch(`${BASE_URL}/resources`);
-        if (!response.ok) throw new Error('Failed to fetch resources');
-        return response.json();
-    },
-    createResource: async (data) => {
-        const response = await fetch(`${BASE_URL}/resources`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to create resource');
-        return response.json();
-    },
-    updateResource: async (id, data) => {
-        const response = await fetch(`${BASE_URL}/resources/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to update resource');
-        return response.json();
-    },
-    deleteResource: async (id) => {
-        const response = await fetch(`${BASE_URL}/resources/${id}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error('Failed to delete resource');
-        return response.json();
-    },
+    getResources: () => request('/resources'),
+    createResource: (data) => request('/resources', { method: 'POST', body: data, auth: true }),
+    updateResource: (id, data) => request(`/resources/${id}`, { method: 'PUT', body: data, auth: true }),
+    deleteResource: (id) => request(`/resources/${id}`, { method: 'DELETE', auth: true }),
 
     // ─── Startups ─────────────────────────────────────────────────────────────
-    getStartups: async () => {
-        const response = await fetch(`${BASE_URL}/startups`);
-        if (!response.ok) throw new Error('Failed to fetch startups');
-        return response.json();
-    },
-    approveStartup: async (id) => {
-        const response = await fetch(`${BASE_URL}/startups/${id}/approve`, { method: 'PUT' });
-        if (!response.ok) throw new Error('Failed to approve startup');
-        return response.json();
-    },
-    rejectStartup: async (id) => {
-        const response = await fetch(`${BASE_URL}/startups/${id}/reject`, { method: 'PUT' });
-        if (!response.ok) throw new Error('Failed to reject startup');
-        return response.json();
-    },
-    submitStartup: async (data) => {
-        const response = await fetch(`${BASE_URL}/startups`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to submit startup');
-        return response.json();
-    },
+    getStartups: () => request('/startups'),
+    approveStartup: (id) => request(`/startups/${id}/approve`, { method: 'PUT', auth: true }),
+    rejectStartup: (id) => request(`/startups/${id}/reject`, { method: 'PUT', auth: true }),
+    // Public submission -- no auth required by design.
+    submitStartup: (data) => request('/startups', { method: 'POST', body: data }),
 
     // ─── Jobs ─────────────────────────────────────────────────────────────────
-    getJobs: async () => {
-        const response = await fetch(`${BASE_URL}/jobs`);
-        if (!response.ok) throw new Error('Failed to fetch jobs');
-        return response.json();
-    },
+    getJobs: () => request('/jobs'),
 
     // ─── Reviews ─────────────────────────────────────────────────────────────
-    getReviews: async (entityType, entityId) => {
-        const response = await fetch(`${BASE_URL}/reviews?entityType=${entityType}&entityId=${entityId}`);
-        if (!response.ok) throw new Error('Failed to fetch reviews');
-        return response.json();
-    },
-    createReview: async (data) => {
-        const response = await fetch(`${BASE_URL}/reviews`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to create review');
-        return response.json();
-    },
-    deleteReview: async (id) => {
-        const response = await fetch(`${BASE_URL}/reviews/${id}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error('Failed to delete review');
-        return response.json();
-    },
+    getReviews: (entityType, entityId) =>
+        request(`/reviews${qs({ entityType, entityId })}`),
+    createReview: (data) => request('/reviews', { method: 'POST', body: data, auth: true }),
+    deleteReview: (id) => request(`/reviews/${id}`, { method: 'DELETE', auth: true }),
 
-    // ─── Auth ────────────────────────────────────────────────────────────
+    // ─── Auth ─────────────────────────────────────────────────────────────────
     login: async (credentials) => {
-        const response = await fetch(`${BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials)
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to login');
-        return data; // Returns { token, user... }
+        const data = await request('/auth/login', { method: 'POST', body: credentials });
+        return { ...data, user: data.user || { id: data.id, username: data.username, email: data.email, role: data.role } };
     },
-    register: async (credentials) => {
-        const response = await fetch(`${BASE_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials)
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Failed to register');
-        return data;
-    },
+    register: (credentials) => request('/auth/register', { method: 'POST', body: credentials }),
+    getProfile: (token) =>
+        request('/auth/profile', {
+            auth: true,
+            headers: token ? { 'x-access-token': token } : {}
+        }),
+    uploadFile: (formData) => request('/auth/upload', { method: 'POST', body: formData, auth: true }),
 
-    // ─── Watchlist ────────────────────────────────────────────────────────
-    getWatchlist: async () => {
-        const response = await fetch(`${BASE_URL}/watchlist`, {
-            headers: { 'x-access-token': localStorage.getItem('luk_token') }
-        });
-        if (!response.ok) throw new Error('Failed to fetch watchlist');
-        return response.json();
-    },
-    addToWatchlist: async (entityType, entityId) => {
-        const response = await fetch(`${BASE_URL}/watchlist`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-access-token': localStorage.getItem('luk_token')
-            },
-            body: JSON.stringify({ entityType, entityId })
-        });
-        if (!response.ok) throw new Error('Failed to add to watchlist');
-        return response.json();
-    },
-    removeFromWatchlist: async (entityType, entityId) => {
-        const response = await fetch(`${BASE_URL}/watchlist/${entityType}/${entityId}`, {
-            method: 'DELETE',
-            headers: { 'x-access-token': localStorage.getItem('luk_token') }
-        });
-        if (!response.ok) throw new Error('Failed to remove from watchlist');
-        return response.json();
-    },
+    // ─── Watchlist ────────────────────────────────────────────────────────────
+    getWatchlist: () => request('/watchlist', { auth: true }),
+    addToWatchlist: (entityType, entityId) =>
+        request('/watchlist', { method: 'POST', body: { entityType, entityId }, auth: true }),
+    removeFromWatchlist: (entityType, entityId) =>
+        request(`/watchlist/${entityType}/${entityId}`, { method: 'DELETE', auth: true }),
 
-    // ─── Search ────────────────────────────────────────────────────────────
-    searchAll: async (query) => {
-        const response = await fetch(`${BASE_URL}/search?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Search failed');
-        return response.json();
-    },
+    // ─── Search ───────────────────────────────────────────────────────────────
+    searchAll: (query) => request(`/search${qs({ q: query })}`),
 
-    // ─── Newsletter ────────────────────────────────────────────────────────
-    subscribeToNewsletter: async (email) => {
-        const response = await fetch(`${BASE_URL}/newsletter/subscribe`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Subscription failed');
-        return data;
-    },
+    // ─── Newsletter ───────────────────────────────────────────────────────────
+    subscribeToNewsletter: (email) =>
+        request('/newsletter/subscribe', { method: 'POST', body: { email } }),
 
-    // ─── Projects ────────────────────────────────────────────────────────────
-    getProjects: async () => {
-        const response = await fetch(`${BASE_URL}/projects`);
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        return response.json();
-    },
-    createProject: async (data) => {
-        const response = await fetch(`${BASE_URL}/projects`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to create project');
-        return response.json();
-    },
-    updateProject: async (id, data) => {
-        const response = await fetch(`${BASE_URL}/projects/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error('Failed to update project');
-        return response.json();
-    },
-    deleteProject: async (id) => {
-        const response = await fetch(`${BASE_URL}/projects/${id}`, {
-            method: 'DELETE',
-            headers: { 'x-access-token': localStorage.getItem('luk_token') }
-        });
-        if (!response.ok) throw new Error('Failed to delete project');
-        return response.json();
-    },
+    // ─── Projects ─────────────────────────────────────────────────────────────
+    getProjects: () => request('/projects'),
+    createProject: (data) => request('/projects', { method: 'POST', body: data, auth: true }),
+    updateProject: (id, data) => request(`/projects/${id}`, { method: 'PUT', body: data, auth: true }),
+    deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE', auth: true }),
 
-    // ─── Activity Logging ────────────────────────────────────────────────────
+    // ─── Activity Logging ─────────────────────────────────────────────────────
     logActivity: async (action, details, pageUrl) => {
         try {
-            await fetch(`${BASE_URL}/activity`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-access-token': localStorage.getItem('luk_token') || ''
-                },
-                body: JSON.stringify({ action, details, pageUrl })
-            });
-        } catch (err) {
-            // Silent fail for logging to not interrupt user flow
+            await request('/activity', { method: 'POST', body: { action, details, pageUrl } });
+        } catch (_) {
+            // Silent fail -- logging must never interrupt the user flow.
         }
     },
 
-    // ─── Google OAuth ────────────────────────────────────────────────────────
-    getGoogleAuthUrl: () => {
-        return `${BASE_URL}/auth/google`;
-    }
+    // ─── Google OAuth ─────────────────────────────────────────────────────────
+    getGoogleAuthUrl: () => `${BASE_URL}/auth/google`
 };
 
+export { BASE_URL };
 export default api;
