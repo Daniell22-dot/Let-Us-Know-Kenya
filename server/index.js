@@ -6,7 +6,6 @@ const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const hpp = require('hpp');
 const xss = require('xss-clean');
 const db = require('./models');
 const passport = require('./config/passport.config');
@@ -25,7 +24,7 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 // Security Middlewares
 app.use(helmet()); // Set security headers
 app.use(xss());    // Clean user input from XSS
-app.use(hpp());    // Prevent HTTP Parameter Pollution
+app.use(require('./middleware/hppGuard')); // Prevent HTTP Parameter Pollution
 
 // Rate Limiting
 const globalLimiter = rateLimit({
@@ -134,8 +133,15 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 // Sync Database
+// alter:true re-introspects and rewrites every table on each boot. Against a
+// managed Postgres such as Neon that is slow and can silently rewrite columns,
+// so it is opt-in via DB_SYNC_ALTER. Without it Sequelize only creates tables
+// that are missing, which is the safe default for a deployed database. Real
+// schema changes should go through migrations.
+const syncOptions = process.env.DB_SYNC_ALTER === 'true' ? { alter: true } : {};
+
 let server;
-db.sequelize.sync({ alter: true })
+db.sequelize.sync(syncOptions)
     .then(() => {
         console.log("Database synced successfully.");
         server = app.listen(PORT, () => {
