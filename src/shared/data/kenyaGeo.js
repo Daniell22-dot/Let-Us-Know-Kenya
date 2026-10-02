@@ -167,24 +167,25 @@ export const REGION_ALIASES = {
     'nyeri county': 'nyeri',
     'siaya county': 'siaya',
     'vihiga county': 'vihiga',
-    'samburu county': 'samburu'
+    'samburu county': 'samburu',
+    'naivasha': 'lake naivasha'
 };
 
 export const KENYA_CENTROIDS = { ...COUNTY_CENTROIDS, ...PLACE_CENTROIDS };
 
+/**
+ * Administrative filler that carries no location. "kenya" is deliberately NOT
+ * here: it is part of real place names such as "Mount Kenya". Phrases like
+ * "Republic of Kenya" collapse to a bare "kenya", which matches nothing.
+ */
 const NOISE_TOKENS = new Set([
     'county',
     'city',
-    'county government',
     'government',
     'of',
     'the',
     'republic',
-    'of kenya',
-    'kenya',
-    'kenyan',
-    'national',
-    'reserved'
+    'national'
 ]);
 
 /**
@@ -219,7 +220,9 @@ const GENERIC_TRAILING = new Set([
     'sanctuary',
     'conservancy',
     'ranch',
-    'game'
+    'game',
+    'kenya',
+    'kenyan'
 ]);
 
 const candidateKeys = (key) => {

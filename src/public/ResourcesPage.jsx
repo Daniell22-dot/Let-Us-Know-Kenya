@@ -1,8 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, Suspense, lazy } from 'react'
 import { Search, Filter, Map, Users, Grid, List, Download, Share2 } from 'lucide-react'
 import ResourceCard from './components/ResourceCard.jsx'
+
+// Leaflet is large, so the map only loads once the visitor scrolls this far.
+const ResourcesMap = lazy(() => import('./components/ResourcesMap.jsx'))
 import api from '../shared/services/api.js'
 import { RESOURCE_CATEGORIES, buildCategoryOptions, uniqueStrings } from '../shared/data/constants.js'
+import { toMapPoint } from '../shared/data/kenyaGeo.js'
 
 const ResourcesPage = () => {
   const [naturalResources, setNaturalResources] = React.useState([])
@@ -46,6 +50,44 @@ const ResourcesPage = () => {
     .filter(resource =>
       selectedCategory === 'All' || resource.category === selectedCategory
     )
+
+  const exportCsv = () => {
+    if (!filteredResources.length) return
+
+    const headers = [
+      'Name', 'Region', 'Category', 'Type', 'Conservation status',
+      'Economic value', 'Tourism potential', 'Latitude', 'Longitude',
+      'Location source', 'Description'
+    ]
+
+    const escapeCell = (value) => {
+      const text = value === null || value === undefined ? '' : String(value)
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+    }
+
+    const rows = filteredResources.map(resource => {
+      const point = toMapPoint(resource)
+      return [
+        resource.name, resource.region, resource.category, resource.type,
+        resource.conservationStatus, resource.economicValue,
+        resource.tourismPotential, point.lat ?? '', point.lng ?? '',
+        point.kind === 'exact' ? 'recorded coordinates'
+          : point.kind === 'unresolved' ? 'not mapped' : `${point.kind} centroid`,
+        resource.description
+      ].map(escapeCell).join(',')
+    })
+
+    // A BOM keeps Excel from mangling the UTF-8 in descriptions.
+    const csv = '\uFEFF' + [headers.map(escapeCell).join(','), ...rows].join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `luk-${activeTab}-resources.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   const stats = {
     natural: {
@@ -208,56 +250,35 @@ const ResourcesPage = () => {
         )}
 
         {/* Map/Data Visualization */}
-        <div className="mt-16 bg-gradient-to-r from-[#1e293b] via-[#c41e3a] to-[#1e293b] rounded-lg p-8 text-white">
-          <div className="md:flex items-center justify-between gap-8">
-            <div className="md:w-1/2 mb-6 md:mb-0">
-              <h3 className="text-2xl font-bold mb-4">Resource Distribution Map</h3>
-              <p className="text-white/90 mb-6 text-sm">
-                Visualize where Kenya's resources are concentrated across different regions.
+        <div className="mt-16">
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div>
+              <h3 className="text-2xl font-bold text-[#1e293b]">Resource Distribution Map</h3>
+              <p className="mt-1 text-sm text-gray-600">
                 {activeTab === 'natural'
-                  ? ' Explore natural resource hotspots and conservation areas.'
-                  : ' Discover talent clusters and innovation hubs.'
-                }
+                  ? 'Where Kenya\'s natural resources sit. Markers show the county or landmark each resource is recorded against.'
+                  : 'Where Kenya\'s human resource clusters sit. Markers show the county or landmark each resource is recorded against.'}
               </p>
-              <div className="flex gap-3 flex-wrap">
-                <button className="bg-white text-[#c41e3a] px-5 py-2.5 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-sm">
-                  View Interactive Map
-                </button>
-                <button className="bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-lg font-semibold transition-colors border border-white/30 text-sm">
-                  Download Data
-                </button>
-              </div>
             </div>
-            <div className="md:w-1/2">
-              <div className="bg-white/15 rounded-lg p-6 border border-white/20">
-                <div className="text-center">
-                  <div className="text-3xl font-bold mb-2">
-                    {activeTab === 'natural' ? stats.natural.regions : stats.human.regions}
-                  </div>
-                  <div className="text-white/80 text-sm">Regions Covered</div>
-                </div>
-                <div className="mt-6 space-y-3">
-                  {regions.slice(1, 4).map(region => {
-                    const count = resources.filter(r => r.region === region).length
-                    return (
-                      <div key={region} className="flex items-center justify-between">
-                        <span className="text-sm">{region}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-white rounded-full"
-                              style={{ width: `${(count / resources.length) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-white/80 w-8 text-right">{count}</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
+            <button
+              onClick={exportCsv}
+              disabled={!filteredResources.length}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-[#1e293b] transition-colors hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Download size={16} />
+              Download {activeTab === 'natural' ? 'natural' : 'human'} resources (CSV)
+            </button>
           </div>
+
+          <Suspense
+            fallback={
+              <div className="flex h-[460px] items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                <span className="text-sm text-gray-500">Loading map&hellip;</span>
+              </div>
+            }
+          >
+            <ResourcesMap resources={filteredResources} />
+          </Suspense>
         </div>
       </div>
     </div>
