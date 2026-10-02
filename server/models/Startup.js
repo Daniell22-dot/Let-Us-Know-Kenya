@@ -27,8 +27,12 @@ const Startup = sequelize.define('Startup', {
         type: DataTypes.STRING
     },
     status: {
-        type: DataTypes.ENUM('published', 'draft', 'pending'),
-        defaultValue: 'published'
+        // 'approved' and 'rejected' were missing, so the moderation endpoints
+        // (PUT /startups/:id/approve|reject) always failed with a Postgres
+        // enum validation error while the admin UI optimistically displayed
+        // success. The full vocabulary now matches the admin panel.
+        type: DataTypes.ENUM('published', 'draft', 'pending', 'approved', 'rejected'),
+        defaultValue: 'pending'
     },
     logo: {
         type: DataTypes.STRING

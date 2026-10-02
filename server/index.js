@@ -1,15 +1,26 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const xss = require('xss-clean');
-const passport = require('./config/passport.config');
-require('dotenv').config();
 const db = require('./models');
+const passport = require('./config/passport.config');
 
 const app = express();
+
+// Required so req.ip reflects the real client behind a reverse proxy. Without
+// this, every request appears to originate from the proxy, which both defeats
+// per-IP rate limiting and poisons the IP recorded on activity logs.
+app.set('trust proxy', 1);
+
+// Ensure the upload destination exists before multer tries to write to it.
+const UPLOAD_DIR = path.join(__dirname, 'uploads');
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // Security Middlewares
 app.use(helmet()); // Set security headers
@@ -46,11 +57,28 @@ app.use(express.json({ limit: '10kb' })); // Body limit
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Static files for uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(UPLOAD_DIR, {
+    setHeaders: (res) => {
+        // Uploaded files are user-supplied; never let the browser sniff or
+        // render them in the context of this origin.
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Content-Disposition', 'attachment');
+    }
+}));
 
 // Simple Route
 app.get('/', (req, res) => {
     res.json({ message: "Welcome to LUK Kenya API" });
+});
+
+// Health / readiness check
+app.get('/api/health', async (req, res) => {
+    try {
+        await db.sequelize.authenticate();
+        res.status(200).json({ status: 'ok', database: 'connected' });
+    } catch (err) {
+        res.status(503).json({ status: 'degraded', database: 'unreachable' });
+    }
 });
 
 // Import Routes
@@ -104,13 +132,47 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 // Sync Database
+let server;
 db.sequelize.sync({ alter: true })
     .then(() => {
         console.log("Database synced successfully.");
-        app.listen(PORT, () => {
+        server = app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}.`);
         });
     })
     .catch((err) => {
         console.error("Failed to sync database: " + err.message);
+        process.exit(1);
     });
+
+// Close the HTTP server and drain the connection pool on shutdown so we don't
+// leave dangling sockets or pooled connections behind.
+const shutdown = (signal) => {
+    console.log(`\n${signal} received, shutting down gracefully...`);
+    const forceExit = setTimeout(() => {
+        console.error("Graceful shutdown timed out, forcing exit.");
+        process.exit(1);
+    }, 10000);
+    forceExit.unref();
+
+    const stop = async () => {
+        try {
+            if (server) await new Promise((resolve) => server.close(resolve));
+            await db.sequelize.close();
+            console.log("Shutdown complete.");
+            process.exit(0);
+        } catch (err) {
+            console.error("Error during shutdown:", err);
+            process.exit(1);
+        }
+    };
+
+    if (server) {
+        server.close(() => stop());
+    } else {
+        stop();
+    }
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

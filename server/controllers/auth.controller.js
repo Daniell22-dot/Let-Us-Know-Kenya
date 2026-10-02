@@ -9,12 +9,19 @@ if (!SECRET_KEY) {
     process.exit(1);
 }
 
+const frontendUrl = () =>
+    (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+
 exports.register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
         if (!username || !email || !password) {
             return res.status(400).send({ message: "Username, email, and password are required." });
+        }
+
+        if (typeof password !== 'string' || password.length < 8) {
+            return res.status(400).send({ message: "Password must be at least 8 characters long." });
         }
 
         // Check if user exists
@@ -28,16 +35,15 @@ exports.register = async (req, res) => {
             return res.status(400).send({ message: "Username is already taken." });
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Create user
+        // Create user.
+        // NOTE: pass the plaintext password. User.beforeCreate hashes it for us.
+        // Hashing here as well produced bcrypt(bcrypt(plaintext)), which
+        // bcrypt.compare could never match, so no registered user could log in.
         const user = await User.create({
             username,
             name: username, // Fallback for name to avoid notNull violations
             email,
-            password: hashedPassword,
+            password,
             role: 'user' // Default role for public registration
         });
 
@@ -79,8 +85,13 @@ exports.login = async (req, res) => {
             }
         });
 
+        // Use an identical response for "no such account" and "wrong password"
+        // so the endpoint cannot be used to enumerate registered emails.
         if (!user) {
-            return res.status(404).send({ message: "User Not found." });
+            return res.status(401).send({
+                token: null,
+                message: "Invalid email or password."
+            });
         }
 
         const passwordIsValid = await bcrypt.compare(password, user.password);
@@ -88,7 +99,7 @@ exports.login = async (req, res) => {
         if (!passwordIsValid) {
             return res.status(401).send({
                 token: null,
-                message: "Invalid Password!"
+                message: "Invalid email or password."
             });
         }
 
@@ -110,22 +121,21 @@ exports.login = async (req, res) => {
 exports.googleCallback = (req, res) => {
     try {
         const user = req.user;
+        if (!user) {
+            return res.redirect(`${frontendUrl()}/?error=oauth_failed`);
+        }
+
         const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '24h' });
 
-        // Redirect to frontend with token and user data as query params or via a secure cookie/storage
-        // For simplicity in this demo, redirecting to a specific path like /auth-success
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const userData = encodeURIComponent(JSON.stringify({
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role
-        }));
-
-        res.redirect(`${frontendUrl}/login-success?token=${token}&user=${userData}`);
+        // The token is placed in the URL *fragment*. Fragments are never sent to
+        // the server and never appear in access logs or Referer headers, so it
+        // cannot be intercepted there. We deliberately do NOT ship the user
+        // object: LoginSuccess.jsx re-fetches the profile from this API using
+        // the token, so nothing about identity is trusted from the URL.
+        res.redirect(`${frontendUrl()}/login-success#token=${encodeURIComponent(token)}`);
     } catch (error) {
         console.error("Google Callback error:", error);
-        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=oauth_failed`);
+        res.redirect(`${frontendUrl()}/?error=oauth_failed`);
     }
 };
 

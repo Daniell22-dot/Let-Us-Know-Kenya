@@ -11,14 +11,33 @@ exports.findAll = async (req, res) => {
     }
 };
 
-// Create new startup
+// Create new startup (public submission form)
 exports.create = async (req, res) => {
     try {
         if (!req.body.name) {
             return res.status(400).json({ message: "Name can not be empty!" });
         }
 
-        const startup = await Startup.create(req.body);
+        // Explicit allowlist. Previously this passed req.body straight to
+        // create(), letting anonymous callers set any column -- including
+        // `status`, so a submission could mark itself "approved".
+        // `status` is now forced to "pending" for every public submission.
+        const startup = await Startup.create({
+            name: req.body.name,
+            founder: req.body.founder ?? null,
+            description: req.body.description ?? null,
+            sector: req.body.sector ?? req.body.industry ?? null,
+            stage: req.body.stage ?? req.body.fundingStage ?? null,
+            location: req.body.location ?? null,
+            logo: req.body.logo ?? null,
+            funding: req.body.funding ?? null,
+            website: req.body.website ?? req.body.websiteUrl ?? null,
+            employees: req.body.employees ?? null,
+            founded: req.body.founded ?? null,
+            tags: req.body.tags ?? [],
+            status: 'pending'
+        });
+
         res.status(201).json(startup);
     } catch (err) {
         res.status(500).json({ message: err.message });
