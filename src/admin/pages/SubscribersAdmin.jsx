@@ -46,10 +46,23 @@ const SubscribersAdmin = () => {
             render: (row) => <span className="font-semibold text-[#1e293b]">{row.email}</span>
         },
         {
+            key: 'isActive',
+            header: 'Status',
+            render: (row) => (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide border ${
+                    row.isActive === false
+                        ? 'bg-gray-100 text-gray-600 border-gray-200'
+                        : 'bg-[#00a84f]/10 text-[#00a84f] border-[#00a84f]/20'
+                }`}>
+                    {row.isActive === false ? 'inactive' : 'active'}
+                </span>
+            )
+        },
+        {
             key: 'createdAt',
             header: 'Subscribed',
             render: (row) => (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 whitespace-nowrap">
                     {row.createdAt ? new Date(row.createdAt).toLocaleString() : '—'}
                 </span>
             )

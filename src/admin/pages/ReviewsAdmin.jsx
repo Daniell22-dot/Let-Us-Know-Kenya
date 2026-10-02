@@ -78,9 +78,9 @@ const ReviewsAdmin = () => {
             render: (row) => <span className="text-xs font-semibold text-gray-500">{row.entityType || '—'}</span>
         },
         {
-            key: 'user',
+            key: 'author',
             header: 'By',
-            render: (row) => row.user?.username || row.userId || 'Anonymous'
+            render: (row) => row.author || 'Anonymous'
         },
         {
             key: 'createdAt',

@@ -1,288 +1,260 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, FileText, Globe } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FileText, ExternalLink } from 'lucide-react';
 import api from '../../shared/services/api';
+import ContentTable, { StatusBadge, ConfirmDialog } from '../components/ContentTable';
+import { PageHeader, AddButton, AdminModal, Field, Input, Textarea, Select } from '../components/AdminUI';
+
+/**
+ * Research projects.
+ *
+ * This is the only page that manages the Project model. A second "Projects"
+ * page previously existed and edited the same table with fields the model does
+ * not have, which meant two different shapes of the same data in the admin.
+ */
+const CATEGORIES = ['Spatial Ecology', 'Biodiversity', 'Climate Change', 'Urban Planning', 'Agriculture'];
+const STATUSES = ['published', 'draft', 'pending'];
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+const emptyForm = () => ({
+    title: '', category: CATEGORIES[0], abstract: '', authors: '',
+    datePublished: today(), thumbnail: '', documentUrl: '', status: 'published'
+});
 
 const ResearchAdmin = () => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [editingProject, setEditingProject] = useState(null);
+    const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('All');
+    const [category, setCategory] = useState('All');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [form, setForm] = useState(emptyForm());
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
-    const [formData, setFormData] = useState({
-        title: '',
-        category: 'Spatial Ecology',
-        abstract: '',
-        authors: '',
-        datePublished: new Date().toISOString().split('T')[0],
-        thumbnail: '',
-        documentUrl: '',
-        status: 'published'
-    });
-
-    const categories = ['Spatial Ecology', 'Biodiversity', 'Climate Change', 'Urban Planning', 'Agriculture'];
-
-    useEffect(() => {
-        fetchProjects();
-    }, []);
-
-    const fetchProjects = async () => {
+    const load = async () => {
+        setLoading(true);
         try {
             const data = await api.getProjects();
-            setProjects(data);
-        } catch (error) {
-            console.error('Error fetching projects:', error);
+            setProjects(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Error fetching projects:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    useEffect(() => { load(); }, []);
+
+    // Any category already stored is offered too, so an older record can still
+    // be filtered and kept rather than being invisible.
+    const categoryOptions = useMemo(() => {
+        const set = new Set(CATEGORIES);
+        projects.forEach((p) => p.category && set.add(p.category));
+        return ['All', ...[...set].sort()];
+    }, [projects]);
+
+    const visible = useMemo(
+        () => projects.filter((p) =>
+            (status === 'All' || p.status === status) &&
+            (category === 'All' || p.category === category)
+        ),
+        [projects, status, category]
+    );
+
+    const openNew = () => {
+        setEditing(null);
+        setForm(emptyForm());
+        setError('');
+        setModalOpen(true);
     };
 
-    const handleEdit = (project) => {
-        setEditingProject(project);
-        setFormData({
-            ...project,
-            datePublished: project.datePublished ? new Date(project.datePublished).toISOString().split('T')[0] : ''
+    const openEdit = (project) => {
+        setEditing(project);
+        setForm({
+            title: project.title || '',
+            category: project.category || CATEGORIES[0],
+            abstract: project.abstract || '',
+            authors: project.authors || '',
+            datePublished: project.datePublished
+                ? new Date(project.datePublished).toISOString().slice(0, 10)
+                : today(),
+            thumbnail: project.thumbnail || '',
+            documentUrl: project.documentUrl || '',
+            status: project.status || 'published'
         });
-        setShowModal(true);
+        setError('');
+        setModalOpen(true);
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this research project?')) {
-            try {
-                await api.deleteProject(id);
-                fetchProjects();
-            } catch (error) {
-                console.error('Error deleting project:', error);
-            }
-        }
-    };
+    const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
-    const handleSubmit = async (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
+        setError('');
+        if (!form.title.trim()) { setError('Title is required.'); return; }
+        setSaving(true);
         try {
-            if (editingProject) {
-                await api.updateProject(editingProject.id, formData);
+            if (editing) {
+                const updated = await api.updateProject(editing.id, form);
+                setProjects((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...updated } : p)));
             } else {
-                await api.createProject(formData);
+                const created = await api.createProject(form);
+                setProjects((prev) => [created, ...prev]);
             }
-            setShowModal(false);
-            fetchProjects();
-            resetForm();
-        } catch (error) {
-            console.error('Error saving project:', error);
-            alert('Failed to save project');
+            setModalOpen(false);
+        } catch (err) {
+            setError(err.message || 'Failed to save. Please try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
-    const resetForm = () => {
-        setEditingProject(null);
-        setFormData({
-            title: '',
-            category: 'Spatial Ecology',
-            abstract: '',
-            authors: '',
-            datePublished: new Date().toISOString().split('T')[0],
-            thumbnail: '',
-            documentUrl: '',
-            status: 'published'
-        });
+    const handleDelete = async (project) => {
+        setDeleting(true);
+        try {
+            await api.deleteProject(project.id);
+            setProjects((prev) => prev.filter((p) => p.id !== project.id));
+            setDeleteTarget(null);
+        } finally {
+            setDeleting(false);
+        }
     };
+
+    const columns = [
+        {
+            key: 'title',
+            header: 'Project',
+            render: (row) => (
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded bg-[#00a84f]/10 flex items-center justify-center shrink-0">
+                        <FileText size={18} className="text-[#00a84f]" />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="font-semibold text-[#1e293b]">{row.title}</p>
+                        {row.abstract && <p className="text-xs text-gray-500 truncate max-w-sm">{row.abstract}</p>}
+                    </div>
+                </div>
+            )
+        },
+        { key: 'category', header: 'Category', render: (row) => <StatusBadge value={row.category} /> },
+        { key: 'authors', header: 'Authors', className: 'text-gray-600' },
+        { key: 'status', header: 'Status', render: (row) => <StatusBadge value={row.status} /> },
+        {
+            key: 'datePublished',
+            header: 'Published',
+            render: (row) => (
+                <span className="text-xs text-gray-400 whitespace-nowrap">
+                    {row.datePublished ? new Date(row.datePublished).toLocaleDateString() : '—'}
+                </span>
+            )
+        }
+    ];
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-[#1e293b]">Research Projects</h2>
-                    <p className="text-gray-500 text-sm mt-1">Manage academic and field research publications</p>
-                </div>
-                <button
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                    className="btn btn-primary"
-                >
-                    <Plus size={18} />
-                    Add Project
-                </button>
-            </div>
+            <PageHeader
+                title="Research Projects"
+                description="Academic and field research publications shown on the Research page."
+                count={visible.length}
+            >
+                <AddButton onClick={openNew}>Add Project</AddButton>
+            </PageHeader>
 
-            <div className="table-container">
-                {loading ? (
-                    <div className="p-8 flex justify-center">
-                        <div className="loading-spinner"></div>
-                    </div>
-                ) : (
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Project Details</th>
-                                <th>Category</th>
-                                <th>Authors</th>
-                                <th>Status</th>
-                                <th className="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {projects.map((project) => (
-                                <tr key={project.id}>
-                                    <td>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded bg-[#00a84f]/10 flex items-center justify-center text-[#00a84f]">
-                                                <FileText size={20} />
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-[#1e293b]">{project.title}</div>
-                                                <div className="text-xs text-gray-500 truncate max-w-[300px]">{project.abstract}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className="badge badge-info">{project.category}</span>
-                                    </td>
-                                    <td>
-                                        <span className="text-sm text-gray-600 font-medium">{project.authors || 'Unknown'}</span>
-                                    </td>
-                                    <td>
-                                        <span className={`badge ${project.status === 'published' ? 'badge-success' : 'badge-warning'}`}>
-                                            {project.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleEdit(project)}
-                                                className="p-2 text-gray-400 hover:text-[#00a84f] hover:bg-[#00a84f]/10 rounded-lg transition-colors"
-                                                title="Edit Project"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(project.id)}
-                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="Delete Project"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+            <ContentTable
+                columns={columns}
+                rows={visible}
+                loading={loading}
+                emptyIcon={FileText}
+                emptyTitle="No research projects yet"
+                emptyHint="Add the first study to publish it on the Research page."
+                filters={{
+                    search,
+                    onSearch: setSearch,
+                    searchPlaceholder: 'Search titles, authors, abstracts...',
+                    options: [
+                        { key: 'status', value: status, onChange: setStatus, options: ['All', ...STATUSES] },
+                        { key: 'category', value: category, onChange: setCategory, options: categoryOptions }
+                    ]
+                }}
+                actions={{
+                    onEdit: openEdit,
+                    onDelete: setDeleteTarget,
+                    extra: [
+                        {
+                            key: 'doc',
+                            title: (p) => (p.documentUrl ? 'Open document' : 'No document uploaded'),
+                            icon: <ExternalLink size={16} />,
+                            className: 'border-gray-200 text-gray-400 hover:text-[#1e293b] hover:bg-gray-100',
+                            onClick: (p) => {
+                                if (p.documentUrl) window.open(p.documentUrl, '_blank', 'noopener,noreferrer');
+                            }
+                        }
+                    ]
+                }}
+            />
+
+            <AdminModal
+                open={modalOpen}
+                title={editing ? 'Edit Research Project' : 'New Research Project'}
+                onClose={() => setModalOpen(false)}
+                onSubmit={handleSave}
+                saving={saving}
+                submitLabel={editing ? 'Update Project' : 'Save Project'}
+                error={error}
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="Project title" required className="md:col-span-2">
+                        <Input {...set('title')} value={form.title} placeholder="e.g. Kenya Butterfly Urban Adaptation Study" />
+                    </Field>
+
+                    <Field label="Category">
+                        <Select {...set('category')} value={form.category}>
+                            {categoryOptions.filter((c) => c !== 'All').map((c) => (
+                                <option key={c} value={c}>{c}</option>
                             ))}
-                            {projects.length === 0 && (
-                                <tr>
-                                    <td colSpan="5" className="text-center py-8 text-gray-500">
-                                        No research projects found. Add your first study!
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+                        </Select>
+                    </Field>
 
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="modal-overlay absolute inset-0" onClick={() => setShowModal(false)}></div>
-                    <div className="modal-content relative bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-6">
-                        <h3 className="text-2xl font-bold text-[#1e293b] mb-6">
-                            {editingProject ? 'Edit Project' : 'New Research Project'}
-                        </h3>
+                    <Field label="Authors">
+                        <Input {...set('authors')} value={form.authors} placeholder="e.g. Jane Doe, John Smith" />
+                    </Field>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="form-label">Project Title *</label>
-                                    <input
-                                        type="text"
-                                        name="title"
-                                        required
-                                        value={formData.title}
-                                        onChange={handleInputChange}
-                                        className="form-input"
-                                        placeholder="e.g. Kenya Butterfly Urban Adaptation Study"
-                                    />
-                                </div>
+                    <Field label="Date published">
+                        <Input type="date" {...set('datePublished')} value={form.datePublished} />
+                    </Field>
 
-                                <div>
-                                    <label className="form-label">Category</label>
-                                    <select name="category" value={formData.category} onChange={handleInputChange} className="form-select">
-                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                </div>
+                    <Field label="Status" hint="Only published projects appear publicly.">
+                        <Select {...set('status')} value={form.status}>
+                            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </Select>
+                    </Field>
 
-                                <div>
-                                    <label className="form-label">Authors</label>
-                                    <input
-                                        type="text"
-                                        name="authors"
-                                        value={formData.authors}
-                                        onChange={handleInputChange}
-                                        className="form-input"
-                                        placeholder="e.g. John Doe, Jane Smith"
-                                    />
-                                </div>
+                    <Field label="Thumbnail URL" className="md:col-span-2">
+                        <Input {...set('thumbnail')} value={form.thumbnail} placeholder="https://example.com/image.jpg" />
+                    </Field>
 
-                                <div>
-                                    <label className="form-label">Date Published</label>
-                                    <input
-                                        type="date"
-                                        name="datePublished"
-                                        value={formData.datePublished}
-                                        onChange={handleInputChange}
-                                        className="form-input"
-                                    />
-                                </div>
+                    <Field label="Document URL" className="md:col-span-2">
+                        <Input {...set('documentUrl')} value={form.documentUrl} placeholder="https://example.com/study.pdf" />
+                    </Field>
 
-                                <div>
-                                    <label className="form-label">Status</label>
-                                    <select name="status" value={formData.status} onChange={handleInputChange} className="form-select">
-                                        <option value="published">Published</option>
-                                        <option value="draft">Draft</option>
-                                    </select>
-                                </div>
-
-                                <div className="col-span-2">
-                                    <label className="form-label">Thumbnail / Featured Image URL</label>
-                                    <input
-                                        type="url"
-                                        name="thumbnail"
-                                        value={formData.thumbnail}
-                                        onChange={handleInputChange}
-                                        className="form-input"
-                                        placeholder="https://example.com/image.jpg"
-                                    />
-                                </div>
-
-                                <div className="col-span-2">
-                                    <label className="form-label">Abstract / Summary *</label>
-                                    <textarea
-                                        name="abstract"
-                                        required
-                                        value={formData.abstract}
-                                        onChange={handleInputChange}
-                                        className="form-input min-h-[120px] resize-y"
-                                        placeholder="Brief summary of the research methodology and findings..."
-                                    ></textarea>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="btn bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                >
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    {editingProject ? 'Update Project' : 'Save Project'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                    <Field label="Abstract / summary" required className="md:col-span-2">
+                        <Textarea {...set('abstract')} value={form.abstract} rows={5} placeholder="Methodology and findings..." />
+                    </Field>
                 </div>
-            )}
+            </AdminModal>
+
+            <ConfirmDialog
+                open={!!deleteTarget}
+                title="Delete research project"
+                message={`This permanently removes "${deleteTarget?.title || ''}".`}
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteTarget(null)}
+                busy={deleting}
+            />
         </div>
     );
 };

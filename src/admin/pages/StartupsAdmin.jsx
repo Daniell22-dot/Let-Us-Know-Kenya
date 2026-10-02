@@ -1,155 +1,184 @@
-import React, { useState } from 'react';
-import { CheckCircle, XCircle, TrendingUp, ExternalLink, RefreshCw } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Briefcase, Check, X, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
 import api from '../../shared/services/api';
+import ContentTable, { StatusBadge, ConfirmDialog } from '../components/ContentTable';
+import { PageHeader } from '../components/AdminUI';
 
-const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  approved: 'bg-green-100 text-green-700',
-  rejected: 'bg-red-100 text-red-700'
-};
+const ALL = 'All';
 
 const StartupsAdmin = () => {
-  const [startups, setStartups] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null);
+    const [startups, setStartups] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('All');
+    const [busyId, setBusyId] = useState(null);
+    const [pendingAction, setPendingAction] = useState(null);
+    const [notice, setNotice] = useState('');
 
-  React.useEffect(() => {
-    fetchStartups();
-  }, []);
+    const load = async () => {
+        setLoading(true);
+        try {
+            const data = await api.getStartups();
+            setStartups(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Error fetching startups:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const fetchStartups = async () => {
-    try {
-      const data = await api.getStartups();
-      setStartups(data);
-    } catch (error) {
-      console.error('Error fetching startups:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    useEffect(() => { load(); }, []);
 
-  const handleApprove = async (id) => {
-    setActionLoading(id + '-approve');
-    try {
-      // Use the status the server actually persisted. Hardcoding 'approved'
-      // here previously made the panel look successful even when the write
-      // had failed.
-      const updated = await api.approveStartup(id);
-      setStartups(prev => prev.map(s => s.id === id ? updated : s));
-    } catch (error) {
-      alert(error.message || 'Failed to approve startup.');
-      fetchStartups();
-    } finally {
-      setActionLoading(null);
-    }
-  };
+    // A submission with no status has never been triaged, so it counts as pending.
+    const visible = useMemo(
+        () => startups.filter((s) => {
+            const current = s.status || 'pending';
+            return status === ALL || current === status;
+        }),
+        [startups, status]
+    );
 
-  const handleReject = async (id) => {
-    setActionLoading(id + '-reject');
-    try {
-      const updated = await api.rejectStartup(id);
-      setStartups(prev => prev.map(s => s.id === id ? updated : s));
-    } catch (error) {
-      alert(error.message || 'Failed to reject startup.');
-      fetchStartups();
-    } finally {
-      setActionLoading(null);
-    }
-  };
+    const pendingCount = startups.filter((s) => !s.status || s.status === 'pending').length;
 
-  const pendingCount = startups.filter(s => s.status === 'pending' || !s.status).length;
+    const decide = async (startup, action) => {
+        setBusyId(startup.id);
+        setNotice('');
+        try {
+            // Use the status the server actually persisted rather than assuming
+            // the write succeeded.
+            const updated = action === 'approve'
+                ? await api.approveStartup(startup.id)
+                : await api.rejectStartup(startup.id);
+            setStartups((prev) => prev.map((s) => (s.id === startup.id ? { ...s, ...updated } : s)));
+        } catch (err) {
+            setNotice(err.message || `Could not ${action} that submission.`);
+            load();
+        } finally {
+            setBusyId(null);
+            setPendingAction(null);
+        }
+    };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-[#1e293b]">Startup Submissions</h2>
-        <div className="flex gap-3">
-          {pendingCount > 0 && (
-            <span className="px-4 py-2 bg-[#00a84f] text-white rounded-lg text-xs font-bold shadow-md flex items-center gap-2">
-              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-              {pendingCount} Pending
-            </span>
-          )}
-          <button onClick={fetchStartups} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50 flex items-center gap-2 text-gray-600">
-            <RefreshCw size={16} /> Refresh
-          </button>
+    const columns = [
+        {
+            key: 'name',
+            header: 'Startup',
+            render: (row) => (
+                <div>
+                    <p className="font-semibold text-[#1e293b]">{row.name}</p>
+                    {row.founder && <p className="text-xs text-gray-500">Founder: {row.founder}</p>}
+                </div>
+            )
+        },
+        { key: 'sector', header: 'Sector', render: (row) => <StatusBadge value={row.sector} /> },
+        { key: 'stage', header: 'Stage', className: 'text-gray-600' },
+        { key: 'location', header: 'Location', className: 'text-gray-600' },
+        { key: 'funding', header: 'Funding', render: (row) => (
+            <span className="text-gray-700 font-medium">{row.funding || '—'}</span>
+        ) },
+        { key: 'status', header: 'Status', render: (row) => <StatusBadge value={row.status || 'pending'} /> },
+        {
+            key: 'createdAt',
+            header: 'Submitted',
+            render: (row) => (
+                <span className="text-xs text-gray-400 whitespace-nowrap">
+                    {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '—'}
+                </span>
+            )
+        }
+    ];
+
+    const actionsFor = (row) => {
+        const current = row.status || 'pending';
+        const extra = [];
+        if (current !== 'approved') {
+            extra.push({
+                key: 'approve',
+                title: 'Approve submission',
+                icon: busyId === row.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />,
+                className: 'border-[#00a84f]/30 text-[#00a84f] hover:bg-[#00a84f]/10',
+                onClick: () => setPendingAction({ row, action: 'approve' })
+            });
+        }
+        if (current !== 'rejected') {
+            extra.push({
+                key: 'reject',
+                title: 'Reject submission',
+                icon: busyId === row.id ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />,
+                className: 'border-gray-200 text-gray-500 hover:text-red-500 hover:bg-red-50',
+                onClick: () => setPendingAction({ row, action: 'reject' })
+            });
+        }
+        if (row.website) {
+            extra.push({
+                key: 'site',
+                title: 'Open website',
+                icon: <ExternalLink size={16} />,
+                className: 'border-gray-200 text-gray-400 hover:text-[#1e293b] hover:bg-gray-100',
+                onClick: () => window.open(row.website, '_blank', 'noopener,noreferrer')
+            });
+        }
+        return { extra };
+    };
+
+    return (
+        <div className="space-y-6">
+            <PageHeader
+                title="Startup Submissions"
+                description="Submissions from the public site, awaiting approval before they are listed."
+                count={visible.length}
+            >
+                <div className="flex items-center gap-3">
+                    {pendingCount > 0 && (
+                        <span className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-xs font-bold flex items-center gap-2">
+                            <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                            {pendingCount} pending
+                        </span>
+                    )}
+                    <button
+                        onClick={load}
+                        className="inline-flex items-center gap-2 border border-gray-300 bg-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-50 text-gray-600"
+                    >
+                        <RefreshCw size={15} /> Refresh
+                    </button>
+                </div>
+            </PageHeader>
+
+            {notice && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{notice}</div>
+            )}
+
+            <ContentTable
+                columns={columns}
+                rows={visible}
+                loading={loading}
+                emptyIcon={Briefcase}
+                emptyTitle="No startup submissions"
+                emptyHint="Submissions from the public site appear here for approval."
+                filters={{
+                    search,
+                    onSearch: setSearch,
+                    searchPlaceholder: 'Search startups, founders, sectors...',
+                    options: [{ key: 'status', value: status, onChange: setStatus, options: [ALL, 'pending', 'approved', 'rejected'] }]
+                }}
+                actions={actionsFor}
+            />
+
+            <ConfirmDialog
+                open={!!pendingAction}
+                title={pendingAction?.action === 'approve' ? 'Approve startup' : 'Reject startup'}
+                message={
+                    pendingAction?.action === 'approve'
+                        ? `${pendingAction?.row?.name} will be listed publicly on the Startups page.`
+                        : `${pendingAction?.row?.name} will not be listed publicly.`
+                }
+                confirmLabel={pendingAction?.action === 'approve' ? 'Approve' : 'Reject'}
+                onConfirm={() => decide(pendingAction.row, pendingAction.action)}
+                onCancel={() => setPendingAction(null)}
+                busy={busyId !== null}
+            />
         </div>
-      </div>
-
-      <div className="grid gap-4">
-        {loading ? (
-          <div className="flex justify-center py-20 bg-white rounded-lg border border-gray-200">
-            <div className="w-10 h-10 border-4 border-[#00a84f] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : startups.length > 0 ? startups.map((startup) => {
-          const status = startup.status || 'pending';
-          return (
-            <div key={startup.id} className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-[#00a84f]/10 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="text-[#00a84f]" size={28} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <h4 className="font-bold text-gray-900 text-lg">{startup.name}</h4>
-                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full border ${STATUS_STYLES[status] || STATUS_STYLES.pending}`}>
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 max-w-xl">{startup.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                      {startup.category && <span>Category: {startup.category}</span>}
-                      {startup.createdAt && <span>Submitted: {new Date(startup.createdAt).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' })}</span>}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 flex-shrink-0">
-                  {status !== 'approved' && (
-                    <button
-                      onClick={() => handleApprove(startup.id)}
-                      disabled={actionLoading === startup.id + '-approve'}
-                      className="px-5 py-2.5 text-sm font-bold text-[#00a84f] hover:bg-[#00a84f]/10 rounded-lg transition-all flex items-center gap-2 border border-[#00a84f]/20 disabled:opacity-50"
-                    >
-                      {actionLoading === startup.id + '-approve'
-                        ? <div className="w-4 h-4 border-2 border-[#00a84f] border-t-transparent rounded-full animate-spin" />
-                        : <CheckCircle size={18} />}
-                      Approve
-                    </button>
-                  )}
-                  {status !== 'rejected' && (
-                    <button
-                      onClick={() => handleReject(startup.id)}
-                      disabled={actionLoading === startup.id + '-reject'}
-                      className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-all flex items-center gap-2 border border-gray-200 disabled:opacity-50"
-                    >
-                      {actionLoading === startup.id + '-reject'
-                        ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                        : <XCircle size={18} />}
-                      Reject
-                    </button>
-                  )}
-                  {startup.website && (
-                    <a href={startup.website} target="_blank" rel="noopener noreferrer"
-                      className="p-2.5 text-gray-400 hover:text-[#00a84f] hover:bg-[#00a84f]/10 rounded-lg transition-all border border-gray-200">
-                      <ExternalLink size={18} />
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        }) : (
-          <div className="bg-white p-12 rounded-lg border border-gray-200 text-center text-gray-500">
-            <TrendingUp size={48} className="mx-auto mb-4 text-gray-300 opacity-20" />
-            <p className="text-lg font-medium">No startup submissions found.</p>
-            <p className="text-sm">New submissions will appear here for review.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 };
 
 export default StartupsAdmin;
