@@ -19,14 +19,13 @@ const GROUPS = [
         items: [
             { path: '/admin/dashboard/blog', label: 'Blog Posts', icon: <BookOpen size={20} /> },
             { path: '/admin/dashboard/podcasts', label: 'Podcasts', icon: <Headphones size={20} /> },
-            { path: '/admin/dashboard/research', label: 'Research', icon: <FileText size={20} /> }
+            { path: '/admin/dashboard/research', label: 'Research Projects', icon: <FolderKanban size={20} /> }
         ]
     },
     {
         label: 'Opportunities',
         items: [
             { path: '/admin/dashboard/startups', label: 'Startups', icon: <Briefcase size={20} /> },
-            { path: '/admin/dashboard/projects', label: 'Projects', icon: <FolderKanban size={20} /> },
             { path: '/admin/dashboard/jobs', label: 'Jobs', icon: <FileText size={20} /> },
             { path: '/admin/dashboard/resources', label: 'Resources', icon: <Map size={20} /> }
         ]

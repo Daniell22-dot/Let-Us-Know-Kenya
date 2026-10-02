@@ -9,7 +9,6 @@ import StartupsAdmin from './pages/StartupsAdmin.jsx'
 import ResearchAdmin from './pages/ResearchAdmin.jsx'
 import Analytics from './pages/Analytics.jsx'
 import JobsAdmin from './pages/JobsAdmin.jsx'
-import ProjectsAdmin from './pages/ProjectsAdmin.jsx'
 import ReviewsAdmin from './pages/ReviewsAdmin.jsx'
 import UsersAdmin from './pages/UsersAdmin.jsx'
 import SubscribersAdmin from './pages/SubscribersAdmin.jsx'
@@ -73,7 +72,6 @@ function AdminApp() {
             <Route path="/startups" element={<StartupsAdmin />} />
             <Route path="/research" element={<ResearchAdmin />} />
             <Route path="/jobs" element={<JobsAdmin />} />
-            <Route path="/projects" element={<ProjectsAdmin />} />
             <Route path="/reviews" element={<ReviewsAdmin />} />
             <Route path="/users" element={<UsersAdmin />} />
             <Route path="/subscribers" element={<SubscribersAdmin />} />
