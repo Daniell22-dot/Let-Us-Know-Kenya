@@ -492,25 +492,78 @@ name to confirm.
 
 ## Deployment
 
-### Frontend
+### Frontend on Vercel
+
+The repository is configured for Vercel out of the box:
+
+- `vercel.json` declares the Vite build, sets `dist/` as the output directory,
+  rewrites every unmatched path to `/index.html` for HTML5 history routing, and
+  adds cache and security headers. Hashed assets under `/assets/` are cached for
+  a year; `index.html` is never cached, so deploys take effect immediately.
+- `.vercelignore` excludes `server/`, `docs/`, `.env*` and `node_modules`.
+  **This matters**: Vercel uploads the working directory as an archive and does
+  not consult `.gitignore`, so without it your `.env` and the 21 MB backend
+  would be sent on every deploy.
 
 ```bash
-npm run build      # emits dist/
+npx vercel            # preview
+npx vercel --prod     # production
 ```
 
-`dist/` is a static bundle. Serve it from any static host or CDN.
+Set one environment variable in the Vercel dashboard:
 
-Because the API client defaults to same-origin `/api/v1`, either:
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `VITE_API_URL` | `https://your-api-host` | Empty means same-origin requests. |
 
-- Serve `dist/` and the API on the same origin (recommended), or
-- Set `VITE_API_URL=https://api.example.com` at build time and add an origin
-  allowlist to the API's CORS configuration.
+Only `VITE_API_URL` is read from the frontend environment. Every other `VITE_*`
+value is compiled into the public bundle, so credentials must never be placed
+there. Admin credentials are not frontend variables at all; create the account
+with `npm run create-admin`.
 
-The app uses HTML5 history routing, so the static host needs a rewrite of
-unmatched paths to `/index.html` (Netlify `_redirects`, Vercel rewrites,
-nginx `try_files $uri /index.html`).
+The API client already supports a separate origin, so pointing `VITE_API_URL` at
+a different host requires no code change.
 
-### Backend
+### Backend on Vercel
+
+The backend is not Vercel-ready yet. Vercel functions are stateless and short
+lived, and three things in the current server assume a persistent process. Each
+needs changing before the backend moves:
+
+1. **Uploaded files are written to local disk.** `server/index.js` saves uploads
+   to `server/uploads/` and serves them with `express.static`. On Vercel that
+   directory is read-only apart from `/tmp`, and every invocation may run on a
+   different machine, so uploads would be lost or unreachable. Move storage to
+   S3 or Cloudinary and serve via CDN. The `server/.env.example` already lists
+   those credentials.
+
+2. **`sequelize.sync()` runs at boot.** The server creates missing tables on
+   startup. That is fine for a VM but wrong for functions, where a cold start
+   would trigger schema work. Move schema management to migrations and run them
+   as a deploy step.
+
+3. **Each route must become a function.** `server/index.js` currently calls
+   `app.listen()`. The Express app needs to be exported and mounted per route
+   under `/api`, for example `api/blogs.js` and `api/resources/[id].js`.
+
+Managed Postgres is already in place, which suits serverless well. Two adjustments
+apply when hosting:
+
+- Add the frontend origin to `ALLOWED_ORIGINS` in `server/.env`, otherwise the
+  browser blocks cross-origin reads. It is left unset here, which allows any
+  origin and is fine for local work only.
+- Change `sslmode=require` to `sslmode=verify-full` in `NEON_URL`. Neon has
+  deprecated its current interpretation of `sslmode=require`, and the explicit
+  setting removes the ambiguity.
+
+Note that a cold TLS connection to Neon took roughly 20 seconds from the
+development machine, which is why the pool acquire timeout was raised to 60s.
+On Vercel that is the dominant cold-start cost, so expect the first request after
+an idle period to be slow. A warm region helps.
+
+### Backend on a long-running host
+
+Works as-is if you would rather not use functions:
 
 ```bash
 cd server
@@ -524,12 +577,21 @@ Before deploying:
   sign-in.
 - Run behind a TLS-terminating reverse proxy. `trust proxy` is already set to
   `1` so rate limiting and activity logs see the real client IP.
-- Do **not** rely on `sync({ alter: true })` in production. Add migrations
-  first.
+- Do **not** rely on `sync({ alter: true })`. Alter mode is opt-in behind
+  `DB_SYNC_ALTER`; real schema changes should go through migrations.
 
 The process handles `SIGTERM`/`SIGINT`, stops accepting connections, drains the
 pool and exits. It exits non-zero if the database cannot be reached at startup.
 `GET /api/health` reports database connectivity for load-balancer checks.
+
+### Manual frontend build
+
+```bash
+npm run build      # emits dist/
+```
+
+`dist/` is a static bundle and can be served from any static host or CDN, given a
+rewrite of unmatched paths to `/index.html` for HTML5 history routing.
 
 ---
 

@@ -54,7 +54,19 @@ const authLimiter = rateLimit({
 app.use('/api/auth/', authLimiter);
 
 // General Middleware
-app.use(cors());
+// Once the frontend is deployed to a separate host from this API, the browser
+// makes cross-origin requests. ALLOWED_ORIGINS lists those hosts. When it is
+// unset the API stays open, which is convenient for local work but should not
+// be how a public deployment is configured.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+app.use(cors({
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+    credentials: false
+}));
 app.use(passport.initialize());
 app.use(express.json({ limit: '10kb' })); // Body limit
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));

@@ -1,0 +1,31 @@
+# Vercel uploads the working directory as an archive. .gitignore is not
+# consulted, so anything not listed here is sent to Vercel, including secrets.
+
+# Secrets. These must never leave the machine.
+.env
+.env.*
+!.env.example
+
+# The backend is deployed separately. It is 21 MB across ~4400 files, almost all
+# of it node_modules, and uploading it on every frontend deploy is slow and
+# serves no purpose.
+server
+backend
+
+# Generated and generated-adjacent
+dist
+node_modules
+**/node_modules
+.vite
+.cache
+
+# Reports and documentation, not needed to build the site.
+docs
+
+# Editor and OS noise
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
