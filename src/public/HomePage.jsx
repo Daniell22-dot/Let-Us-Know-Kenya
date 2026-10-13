@@ -6,6 +6,8 @@ import ResourceCard from './components/ResourceCard.jsx'
 import PodcastCard from './components/PodcastCard.jsx'
 import BlogCard from './components/BlogCard.jsx'
 import { CardSkeleton } from './components/SkeletonLoaders.jsx'
+import { useAuth } from './AuthContext'
+import { requestSignIn } from './components/RequireAuth.jsx'
 import {
   ArrowRight, Play, BookOpen, Map, Users, TrendingUp,
   Globe, Coffee, Mountain, Wifi, Award, Sparkles
@@ -14,31 +16,29 @@ import api from '../shared/services/api.js'
 import SubmitStartupModal from './components/SubmitStartupModal.jsx'
 
 const HomePage = () => {
+  const { isAuthenticated } = useAuth()
   const [podcasts, setPodcasts] = React.useState([])
   const [blogPosts, setBlogPosts] = React.useState([])
   const [resources, setResources] = React.useState([])
-  const [startups, setStartups] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = React.useState(false)
 
   React.useEffect(() => {
     const fetchData = async () => {
-      try {
-        const [podData, blogData, resData, startupData] = await Promise.all([
-          api.getPodcasts(),
-          api.getBlogs(),
-          api.getResources(),
-          api.getStartups()
-        ])
-        setPodcasts(podData)
-        setBlogPosts(blogData)
-        setResources(resData)
-        setStartups(startupData)
-      } catch (error) {
-        console.error('Error fetching home data:', error)
-      } finally {
-        setLoading(false)
-      }
+      // Startups are deliberately excluded here. That endpoint requires a
+      // session, so including it in this batch would reject with 401 for
+      // anonymous visitors and, because the calls share one Promise.all, would
+      // wipe out the podcasts, blogs and resources sections as well.
+      const [podData, blogData, resData] = await Promise.all([
+        api.getPodcasts(),
+        api.getBlogs(),
+        api.getResources()
+      ]).catch(() => [[], [], []])
+
+      setPodcasts(podData || [])
+      setBlogPosts(blogData || [])
+      setResources(resData || [])
+      setLoading(false)
     }
     fetchData()
   }, [])
@@ -237,10 +237,12 @@ const HomePage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={() => setIsSubmitModalOpen(true)}
+                onClick={() =>
+                  isAuthenticated ? setIsSubmitModalOpen(true) : requestSignIn()
+                }
                 className="bg-white text-[#00a84f] px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-all"
               >
-                Submit Your Startup
+                {isAuthenticated ? 'Submit Your Startup' : 'Sign in to Submit'}
               </button>
               <Link
                 to="/startups"

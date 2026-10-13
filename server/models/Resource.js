@@ -12,7 +12,8 @@ const Resource = sequelize.define('Resource', {
         allowNull: false
     },
     region: {
-        type: DataTypes.STRING
+        type: DataTypes.STRING,
+        index: true
     },
     type: {
         type: DataTypes.STRING
@@ -38,7 +39,8 @@ const Resource = sequelize.define('Resource', {
         defaultValue: false
     },
     category: {
-        type: DataTypes.STRING
+        type: DataTypes.STRING,
+        index: true
     },
     economicValue: {
         type: DataTypes.STRING

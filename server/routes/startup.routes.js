@@ -3,11 +3,14 @@ const router = express.Router();
 const startups = require('../controllers/startup.controller');
 const { verifyToken, isAdmin } = require('../middleware/authJwt');
 
-// Public submission from the "Submit Startup" form. Stays open to everyone, but
-// the controller forces status to "pending" so nothing self-approves.
-router.post("/", startups.create);
+// Submission is restricted to signed-in users. The controller still forces
+// status to "pending", so no one can self-approve their own application.
+router.post("/", verifyToken, startups.create);
 
-router.get("/", startups.findAll);
+// Reading the directory requires a session too. This is enforced server-side
+// rather than only in the interface, because a client-side gate on its own
+// stops the UI from requesting the list, not anyone from calling the endpoint.
+router.get("/", verifyToken, startups.findAll);
 
 // Admin-only moderation and management
 router.put("/:id", verifyToken, isAdmin, startups.update);

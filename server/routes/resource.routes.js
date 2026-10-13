@@ -7,6 +7,10 @@ const { verifyToken, isAdmin } = require('../middleware/authJwt');
 router.post("/", verifyToken, isAdmin, resources.create);
 
 // Retrieve all Resources
+// Static sub-paths are declared before the parameterised routes so they are not
+// captured as an :id.
+router.get("/points", resources.points);
+router.get("/facets", resources.facets);
 router.get("/", resources.findAll);
 
 // Update a Resource with id

@@ -28,7 +28,7 @@ const ResourcesAdmin = () => {
         let cancelled = false;
         (async () => {
             try {
-                const data = await api.getResources();
+                const { data } = await api.getResources();
                 if (!cancelled) setResources(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('Error fetching resources:', error);

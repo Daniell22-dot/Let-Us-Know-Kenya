@@ -108,17 +108,23 @@ const api = {
     deletePodcast: (id) => request(`/podcasts/${id}`, { method: 'DELETE', auth: true }),
 
     // ─── Resources ───────────────────────────────────────────────────────────
-    getResources: () => request('/resources'),
+    // Paginated: { data, meta }. Passing no limit returns a single page.
+    getResources: (params) => request(`/resources${qs(params || {})}`),
+    // Lightweight id/name/category/region/type/coordinates for the map.
+    getResourcePoints: (params) => request(`/resources/points${qs(params || {})}`),
+    getResourceFacets: () => request('/resources/facets'),
     createResource: (data) => request('/resources', { method: 'POST', body: data, auth: true }),
     updateResource: (id, data) => request(`/resources/${id}`, { method: 'PUT', body: data, auth: true }),
     deleteResource: (id) => request(`/resources/${id}`, { method: 'DELETE', auth: true }),
 
     // ─── Startups ─────────────────────────────────────────────────────────────
-    getStartups: () => request('/startups'),
+    // Both the directory listing and submission require a signed-in session. The
+    // server enforces this; sending the token is what makes that possible.
+    getStartups: () => request('/startups', { auth: true }),
     approveStartup: (id) => request(`/startups/${id}/approve`, { method: 'PUT', auth: true }),
     rejectStartup: (id) => request(`/startups/${id}/reject`, { method: 'PUT', auth: true }),
-    // Public submission -- no auth required by design.
-    submitStartup: (data) => request('/startups', { method: 'POST', body: data }),
+    // Submissions still land as "pending" for admin review.
+    submitStartup: (data) => request('/startups', { method: 'POST', body: data, auth: true }),
 
     // ─── Jobs ─────────────────────────────────────────────────────────────────
     getJobs: () => request('/jobs'),

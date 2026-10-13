@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
-import { MapPin, AlertTriangle } from 'lucide-react';
+import { MapPin, AlertTriangle, Loader2 } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import { toMapPoint } from '../../shared/data/kenyaGeo';
 
@@ -58,7 +58,7 @@ const FitToMarkers = ({ points }) => {
     return null;
 };
 
-const ResourcesMap = ({ resources = [] }) => {
+const ResourcesMap = ({ resources = [], loading = false }) => {
     const colourFor = useStableColour(resources.map((r) => r.category));
 
     const { groups, unresolved } = useMemo(() => {
@@ -94,6 +94,17 @@ const ResourcesMap = ({ resources = [] }) => {
     }, [resources]);
 
     const points = useMemo(() => groups.map((g) => ({ lat: g.lat, lng: g.lng })), [groups]);
+
+    if (loading) {
+        return (
+            <div className="flex h-[460px] items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 size={26} className="animate-spin text-[#00a84f]" />
+                    <span className="text-sm text-gray-500">Loading map&hellip;</span>
+                </div>
+            </div>
+        );
+    }
 
     if (groups.length === 0) {
         return (

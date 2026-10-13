@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, Headphones, BookOpen, Map, Users, Home, Search, FlaskConical, User, LogOut, TrendingUp } from 'lucide-react'
 import { useAuth } from '../AuthContext';
 import AuthModal from './AuthModal';
+import { AUTH_REQUEST_EVENT } from './RequireAuth';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -11,6 +12,19 @@ const Header = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Gated sections ask for sign-in from wherever they are rendered. The modal
+  // lives here, so this is the single place that has to respond.
+  useEffect(() => {
+    const openSignIn = () => {
+      if (!isAuthenticated) {
+        setAuthModalOpen(true);
+        setIsMenuOpen(false);
+      }
+    };
+    window.addEventListener(AUTH_REQUEST_EVENT, openSignIn);
+    return () => window.removeEventListener(AUTH_REQUEST_EVENT, openSignIn);
+  }, [isAuthenticated]);
 
   const handleSearch = (e) => {
     e.preventDefault()
