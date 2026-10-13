@@ -13,7 +13,6 @@ server
 backend
 
 # Generated and generated-adjacent
-dist
 node_modules
 **/node_modules
 .vite
